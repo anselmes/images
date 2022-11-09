@@ -1,22 +1,22 @@
 # Add 'repo' label to any root file changes
 repo:
-- '*'
+  - "*"
 
 # Add 'docker' label to Dockerfile
 docker:
-- build/package/Dockerfile
-- build/package/**/Dockerfile
+  - build/package/Dockerfile
+  - build/package/**/Dockerfile
 
 # Add 'docs' label to files in docs
 docs:
-- docs/*
-- **/docs
+  - docs/*
+  - docs/**/*
 
 # Add 'scripts' label to files in scripts
 scripts:
-- '*'
+  - "*"
 
 # Add 'tooling' label to change within tools and .run
 tooling:
-- tools/*
-- tools/*/**
+  - tools/*
+  - tools/*/**
