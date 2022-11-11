@@ -14,15 +14,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # rebased/repackaged base image that only updates existing packages
-ARG BASE=anselmes.jfrog.io/pkg-docker-virtual/ubuntu:20.04
+ARG BASE=anselmes.jfrog.io/container/ubuntu:20.04
 FROM ${BASE}
 LABEL maintainer="Schubert Anselme <schubert@anselm.es>"
 LABEL org.opencontainers.image.source="https://github.com/anselmes/images/omada-controller"
 
 COPY healthcheck.sh install.sh log4j_patch.sh /
-
-# valid values: amd64 (default) | arm64 | armv7l
-ARG ARCH=amd64
 
 # install version (major.minor only); OMADA_URL set in install.sh
 ARG INSTALL_VER="5.6"
@@ -32,7 +29,7 @@ RUN /install.sh && \
   /log4j_patch.sh && \
   rm /install.sh /log4j_patch.sh
 
-COPY entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /
 
 WORKDIR /opt/tplink/EAPController/lib
 EXPOSE 8088 8043 8843 29810/udp 29811 29812 29813 29814

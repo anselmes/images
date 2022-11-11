@@ -1,4 +1,4 @@
-ARG FROM=anselmes.jfrog.io/pkg-docker-virtual/ubuntu:20.04
+ARG FROM=anselmes.jfrog.io/container/ubuntu:20.04
 FROM ${FROM}
 
 LABEL org.opencontainers.image.authors='airship-discuss@lists.airshipit.org, irc://#airshipit@freenode'
