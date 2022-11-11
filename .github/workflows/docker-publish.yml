@@ -20,14 +20,14 @@ on:
 
 env:
   # Use docker.io for Docker Hub if empty
-  REGISTRY: ghcr.io
+  REGISTRY: anselmes.jfrog.io/container
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
-
+  # Platform to build for
+  PLATFORMS: linux/amd64,linux/arm64
 
 jobs:
-  build:
-
+  container:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -35,6 +35,17 @@ jobs:
       # This is used to complete the identity challenge
       # with sigstore/fulcio when running outside of PRs.
       id-token: write
+
+    strategy:
+      include:
+        - name: omada-controller
+          dockerfile: /build/package/omada-controller/Dockerfile
+        - name: maas-region-controller
+          dockerfile: /build/package/maas/region-controller/Dockerfile
+        - name: maas-rack-controller
+          dockerfile: /build/package/maas/rack-controller/Dockerfile
+        - name: maas-sstream-cache
+          dockerfile: /build/package/maas/sstream-cache/Dockerfile
 
     steps:
       - name: Checkout repository
@@ -46,8 +57,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@b3413d484cc23cf8778c3d2aa361568d4eb54679
         with:
-          cosign-release: 'v1.9.0'
-
+          cosign-release: "v1.9.0"
 
       # Workaround: https://github.com/docker/build-push-action/issues/461
       - name: Setup Docker buildx
@@ -60,8 +70,10 @@ jobs:
         uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          # username: ${{ github.actor }}
+          # password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
 
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
@@ -69,7 +81,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@69f6fc9d46f2f8bf0d5491e4aabe0bb8c6a4678a
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.name }}
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
@@ -78,10 +90,11 @@ jobs:
         uses: docker/build-push-action@c84f38281176d4c9cdb1626ffafcd6b3911b5d94
         with:
           context: .
-          file: /build/package/<image>/Dockerfile
+          file: ${{ matrix.dockerfile }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          platforms: ${{ env.PLATFORMS }}
 
       # Sign the resulting Docker image digest except on PRs.
       # This will only write to the public Rekor transparency log when the Docker
