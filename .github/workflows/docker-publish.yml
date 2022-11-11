@@ -21,6 +21,7 @@ on:
 env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: anselmes.jfrog.io/container
+  REGISTRY: anselmes.jfrog.io/container
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
   # Platform to build for
@@ -37,7 +38,7 @@ jobs:
       id-token: write
 
     strategy:
-      include:
+      matrix:
         - name: omada-controller
           dockerfile: /build/package/omada-controller/Dockerfile
         - name: maas-region-controller
