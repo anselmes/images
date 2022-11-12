@@ -62,22 +62,15 @@ COPY 3.2_bios_grub_partition.patch /tmp/3.2_bios_grub_partition.patch
 # behind ingress
 COPY 3.2_proxy_acl.patch /tmp/3.2_proxy_acl.patch
 # Patch to add retrying to MaaS BMC user setup, and improve exception handling
-# COPY 2.8_configure_ipmi_user.patch /tmp/2.8_configure_ipmi_user.patch
-# COPY 2.8_secure_headers.patch /tmp/2.8_securedo_headers.patch
 COPY 3.2_region_secret_rotate.patch /tmp/3.2_region_secret_rotate.patch
 COPY 3.2_partitiontable_does_not_exist.patch /tmp/3.2_partitiontable_does_not_exist.patch
-# Avoid enlistment failures due to exceptions during moonshot detect attempts
-# COPY 2.8_maas_ipmi_autodetect_tool.patch /tmp/2.8_maas_ipmi_autodetect_tool.patch
 
 RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed_network.py < /tmp/3.2_route.patch
 RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed.py < /tmp/3.2_kernel_package.patch
 RUN cd /usr/lib/python3/dist-packages/maasserver/models && patch partition.py < /tmp/3.2_bios_grub_partition.patch
 RUN cd /usr/lib/python3/dist-packages/maasserver && patch security.py < /tmp/3.2_region_secret_rotate.patch
-# RUN cd /usr/lib/python3/dist-packages/metadataserver/user_data/templates/snippets && patch maas_ipmi_autodetect.py < /tmp/2.8_configure_ipmi_user.patch
 RUN cd /usr/lib/python3/dist-packages/provisioningserver/templates/proxy && patch maas-proxy.conf.template < /tmp/3.2_proxy_acl.patch
-# RUN cd /usr/lib/python3/dist-packages/twisted/web && patch server.py < /tmp/2.8_secure_headers.patch
 RUN cd /usr/lib/python3/dist-packages/maasserver/api && patch partitions.py < /tmp/3.2_partitiontable_does_not_exist.patch
-# RUN cd /usr/lib/python3/dist-packages/metadataserver/user_data/templates/snippets/ && patch maas_ipmi_autodetect_tool.py < /tmp/2.8_maas_ipmi_autodetect_tool.patch
 
 # echo journalctl logs to the container's stdout
 COPY journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
