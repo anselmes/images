@@ -76,20 +76,15 @@ COPY build/patch/maas/bios_grub_partition.patch /tmp/bios_grub_partition.patch
 # behind ingress
 COPY build/patch/maas/proxy_acl.patch /tmp/proxy_acl.patch
 # Patch to add retrying to MaaS BMC user setup, and improve exception handling
-COPY build/patch/maas/configure_ipmi_user.patch /tmp/configure_ipmi_user.patch
-COPY build/patch/maas/secure_headers.patch /tmp/secure_headers.patch
-COPY build/patch/maas/partitiontable_does_not_exist.patch /tmp/partitiontable_does_not_exist.patch
-# Allow tags with '/' symbols
-COPY build/patch/maas/regex_tags.patch /tmp/regex_tags.patch
+COPY 3.2_region_secret_rotate.patch /tmp/3.2_region_secret_rotate.patch
+COPY 3.2_partitiontable_does_not_exist.patch /tmp/3.2_partitiontable_does_not_exist.patch
 
-RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed_network.py < /tmp/route.patch
-RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed.py < /tmp/kernel_package.patch
-RUN cd /usr/lib/python3/dist-packages/maasserver/models && patch partition.py < /tmp/bios_grub_partition.patch
-RUN cd /usr/lib/python3/dist-packages/metadataserver/builtin_scripts/commissioning_scripts && patch bmc_config.py < /tmp/configure_ipmi_user.patch
-RUN cd /usr/lib/python3/dist-packages/provisioningserver/templates/proxy && patch maas-proxy.conf.template < /tmp/proxy_acl.patch
-RUN cd /usr/lib/python3/dist-packages/twisted/web && patch server.py < /tmp/secure_headers.patch
-RUN cd /usr/lib/python3/dist-packages/maasserver/api && patch partitions.py < /tmp/partitiontable_does_not_exist.patch
-RUN cd /usr/lib/python3/dist-packages/maasserver/models && patch ownerdata.py < /tmp/regex_tags.patch
+RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed_network.py < /tmp/3.2_route.patch
+RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed.py < /tmp/3.2_kernel_package.patch
+RUN cd /usr/lib/python3/dist-packages/maasserver/models && patch partition.py < /tmp/3.2_bios_grub_partition.patch
+RUN cd /usr/lib/python3/dist-packages/maasserver && patch security.py < /tmp/3.2_region_secret_rotate.patch
+RUN cd /usr/lib/python3/dist-packages/provisioningserver/templates/proxy && patch maas-proxy.conf.template < /tmp/3.2_proxy_acl.patch
+RUN cd /usr/lib/python3/dist-packages/maasserver/api && patch partitions.py < /tmp/3.2_partitiontable_does_not_exist.patch
 
 # echo journalctl logs to the container's stdout
 COPY config/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service

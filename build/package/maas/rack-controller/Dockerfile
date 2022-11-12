@@ -73,17 +73,15 @@ COPY config/register-rack-controller.service /lib/systemd/system/register-rack-c
 RUN systemctl enable register-rack-controller.service
 
 # Patch so that Calico interfaces are ignored
-COPY build/patch/maas/nic_filter.patch /tmp/nic_filter.patch
-COPY build/patch/maas/secure_headers.patch /tmp/secure_headers.patch
+COPY 3.2_nic_filter.patch /tmp/3.2_nic_filter.patch
 # Patch so maas knows that "BMC error" is retriable
 COPY build/patch/maas/ipmi_error.patch /tmp/ipmi_error.patch
 # Patch to space redfish request retries apart a bit, to avoid overwhelming the BMC
 COPY build/patch/maas/redfish_retries.patch /tmp/redfish_retries.patch
 
-RUN cd /usr/lib/python3/dist-packages/provisioningserver/utils && patch network.py < /tmp/nic_filter.patch
-RUN cd /usr/lib/python3/dist-packages/twisted/web && patch server.py < /tmp/secure_headers.patch
-RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch ipmi.py < /tmp/ipmi_error.patch
-RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch redfish.py < /tmp/redfish_retries.patch
+RUN cd /usr/lib/python3/dist-packages/provisioningserver/utils && patch network.py < /tmp/3.2_nic_filter.patch
+RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch ipmi.py < /tmp/3.2_ipmi_error.patch
+RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch redfish.py < /tmp/3.2_redfish_retries.patch
 
 # echo journalctl logs to the container's stdout
 COPY config/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
