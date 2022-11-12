@@ -61,14 +61,12 @@ RUN systemctl enable register-rack-controller.service
 
 # Patch so that Calico interfaces are ignored
 COPY 3.2_nic_filter.patch /tmp/3.2_nic_filter.patch
-# COPY 2.8_secure_headers.patch /tmp/2.8_secure_headers.patch
 # Patch so maas knows that "BMC error" is retriable
 COPY 3.2_ipmi_error.patch /tmp/3.2_ipmi_error.patch
 # Patch to space redfish request retries apart a bit, to avoid overwhelming the BMC
 COPY 3.2_redfish_retries.patch /tmp/3.2_redfish_retries.patch
 
 RUN cd /usr/lib/python3/dist-packages/provisioningserver/utils && patch network.py < /tmp/3.2_nic_filter.patch
-# RUN cd /usr/lib/python3/dist-packages/twisted/web && patch server.py < /tmp/2.8_secure_headers.patch
 RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch ipmi.py < /tmp/3.2_ipmi_error.patch
 RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch redfish.py < /tmp/3.2_redfish_retries.patch
 
