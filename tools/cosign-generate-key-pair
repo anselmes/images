@@ -15,11 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-<<<<<<< HEAD
 set -e
-=======
-set -eux
->>>>>>> 959a39d (Fix cosign)
 
 # generate cosign key pair
 cosign generate-key-pair

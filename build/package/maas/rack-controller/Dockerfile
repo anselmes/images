@@ -32,59 +32,60 @@ ARG no_proxy
 ENV DEBIAN_FRONTEND noninteractive
 ENV container docker
 
-ENV MAAS_VERSION 1:3.3.1-13169-g.94920eb1e-0ubuntu1~22.04.1
-
-# Remove systemd-timesyncd, which conflicts with chrony
-RUN apt-get remove -y --purge systemd-timesyncd
+ENV MAAS_VERSION 1:3.0.0-10029-g.986ea3e45-0ubuntu1~20.04.1
 
 RUN apt-get -qq update \
- && apt-get install -y \
-        avahi-daemon \
-        isc-dhcp-server \
-        jq \
-        libvirt-clients \
-        libvirt-daemon-system\
-        patch \
-        software-properties-common \
-        sudo \
-        systemd \
-        ca-certificates \
-# Don"t start any optional services except for the few we need.
-# (specifically, don"t start avahi-daemon, isc-dhcp-server, or libvirtd)
- && find /etc/systemd/system \
-         /lib/systemd/system \
-         -path '*.wants/*' \
-         -not -name '*journald*' \
-         -not -name '*systemd-tmpfiles*' \
-         -not -name '*systemd-user-sessions*' \
-         -exec rm \{} \; \
- && systemctl set-default multi-user.target \
-# Install maas from the ppa
- && add-apt-repository -yu ppa:maas/3.3 \
- && apt-get install -y \
-        maas-rack-controller=$MAAS_VERSION \
- && rm -rf /var/lib/apt/lists/*
+  && apt-get install -y \
+  avahi-daemon \
+  isc-dhcp-server \
+  jq \
+  libvirt-daemon-system \
+  libvirt-clients \
+  patch \
+  software-properties-common \
+  sudo \
+  systemd \
+  ca-certificates \
+  # Don't start any optional services except for the few we need.
+  # (specifically, don't start avahi-daemon, isc-dhcp-server, or libvirtd)
+  && find /etc/systemd/system \
+  /lib/systemd/system \
+  -path '*.wants/*' \
+  -not -name '*journald*' \
+  -not -name '*systemd-tmpfiles*' \
+  -not -name '*systemd-user-sessions*' \
+  -exec rm \{} \; \
+  && systemctl set-default multi-user.target \
+  # Install maas from the ppa
+  && add-apt-repository -yu ppa:maas/3.0 \
+  && apt-get install -y \
+  maas-rack-controller=$MAAS_VERSION \
+  && rm -rf /var/lib/apt/lists/*
+
+# Update latest packages, including security updates
+RUN apt-get -qq update \
+  && apt-get upgrade -y
 
 # Preserve the directory structure, permissions, and contents of /var/lib/maas
 RUN mkdir -p /opt/maas/ && tar -cvzf /opt/maas/var-lib-maas.tgz /var/lib/maas
 
 # register ourselves with the region controller
-COPY config/register-rack-controller.service /lib/systemd/system/register-rack-controller.service
+COPY register-rack-controller.service /lib/systemd/system/register-rack-controller.service
 RUN systemctl enable register-rack-controller.service
 
 # Patch so that Calico interfaces are ignored
-COPY 3.2_nic_filter.patch /tmp/3.2_nic_filter.patch
+COPY nic_filter.patch /tmp/nic_filter.patch
 # Patch so maas knows that "BMC error" is retriable
-COPY build/patch/maas/ipmi_error.patch /tmp/ipmi_error.patch
+COPY ipmi_error.patch /tmp/ipmi_error.patch
 # Patch to space redfish request retries apart a bit, to avoid overwhelming the BMC
-COPY build/patch/maas/redfish_retries.patch /tmp/redfish_retries.patch
+COPY redfish_retries.patch /tmp/redfish_retries.patch
 
-RUN cd /usr/lib/python3/dist-packages/provisioningserver/utils && patch network.py < /tmp/3.2_nic_filter.patch
-RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch ipmi.py < /tmp/3.2_ipmi_error.patch
-RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch redfish.py < /tmp/3.2_redfish_retries.patch
+RUN cd /usr/lib/python3/dist-packages/provisioningserver/utils && patch network.py < /tmp/nic_filter.patch
+RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch ipmi.py < /tmp/ipmi_error.patch
+RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch redfish.py < /tmp/redfish_retries.patch
 
 # echo journalctl logs to the container's stdout
-COPY config/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
+COPY journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
 RUN systemctl enable journalctl-to-tty.service
 
 # quiet sudo for the maas user
