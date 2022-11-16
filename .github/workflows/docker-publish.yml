@@ -20,6 +20,8 @@ env:
   REGISTRY: anselmes.jfrog.io
   # Platform to build for
   PLATFORMS: linux/amd64,linux/arm64
+  # Base image for Dockerfile
+  BASE_IMAGE: ${{ env.REGISTRY }}/container/ubuntu:20.04
 
 jobs:
   container:
@@ -99,6 +101,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: ${{ env.PLATFORMS }}
+          build-args: |
+            FROM=${{ env.BASE_IMAGE }}
 
       # Sign the resulting Docker image digest except on PRs.
       # This will only write to the public Rekor transparency log when the Docker

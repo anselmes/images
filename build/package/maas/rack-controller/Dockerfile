@@ -1,4 +1,4 @@
-ARG FROM=anselmes.jfrog.io/container/ubuntu:20.04
+ARG FROM=ubuntu:20.04
 FROM ${FROM}
 
 LABEL org.opencontainers.image.authors='airship-discuss@lists.airshipit.org, irc://#airshipit@freenode'
@@ -18,7 +18,7 @@ ARG no_proxy
 ENV DEBIAN_FRONTEND noninteractive
 ENV container docker
 
-ENV MAAS_VERSION 1:3.2.6-12016-g.19812b4da-0ubuntu1~20.04.1
+ENV MAAS_VERSION 1:3.0.0-10029-g.986ea3e45-0ubuntu1~20.04.1
 
 RUN apt-get -qq update \
   && apt-get install -y \
@@ -43,7 +43,7 @@ RUN apt-get -qq update \
   -exec rm \{} \; \
   && systemctl set-default multi-user.target \
   # Install maas from the ppa
-  && add-apt-repository -yu ppa:maas/3.2 \
+  && add-apt-repository -yu ppa:maas/3.0 \
   && apt-get install -y \
   maas-rack-controller=$MAAS_VERSION \
   && rm -rf /var/lib/apt/lists/*
@@ -56,22 +56,22 @@ RUN apt-get -qq update \
 RUN mkdir -p /opt/maas/ && tar -cvzf /opt/maas/var-lib-maas.tgz /var/lib/maas
 
 # register ourselves with the region controller
-COPY scripts/register-rack-controller.service /lib/systemd/system/register-rack-controller.service
+COPY register-rack-controller.service /lib/systemd/system/register-rack-controller.service
 RUN systemctl enable register-rack-controller.service
 
 # Patch so that Calico interfaces are ignored
-COPY 3.2_nic_filter.patch /tmp/3.2_nic_filter.patch
+COPY nic_filter.patch /tmp/nic_filter.patch
 # Patch so maas knows that "BMC error" is retriable
-COPY 3.2_ipmi_error.patch /tmp/3.2_ipmi_error.patch
+COPY ipmi_error.patch /tmp/ipmi_error.patch
 # Patch to space redfish request retries apart a bit, to avoid overwhelming the BMC
-COPY 3.2_redfish_retries.patch /tmp/3.2_redfish_retries.patch
+COPY redfish_retries.patch /tmp/redfish_retries.patch
 
-RUN cd /usr/lib/python3/dist-packages/provisioningserver/utils && patch network.py < /tmp/3.2_nic_filter.patch
-RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch ipmi.py < /tmp/3.2_ipmi_error.patch
-RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch redfish.py < /tmp/3.2_redfish_retries.patch
+RUN cd /usr/lib/python3/dist-packages/provisioningserver/utils && patch network.py < /tmp/nic_filter.patch
+RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch ipmi.py < /tmp/ipmi_error.patch
+RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch redfish.py < /tmp/redfish_retries.patch
 
 # echo journalctl logs to the container's stdout
-COPY scripts/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
+COPY journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
 RUN systemctl enable journalctl-to-tty.service
 
 # quiet sudo for the maas user
