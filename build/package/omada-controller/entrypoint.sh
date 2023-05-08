@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Copyright © 2022 Schubert Anselme <schubert@anselm.es>
-
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -15,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-set -eux
+set -e
 
 # set environment variables
 export TZ
@@ -51,7 +49,7 @@ if grep -q -E "^omada:" /etc/group >/dev/null 2>&1; then
   # exiting group found; also make sure the omada user matches the GID
   echo "INFO: Group (omada) exists; skipping creation"
   EXISTING_GID="$(id -g omada)"
-  if [ "${EXISTING_GID}" != "${PGID}" ]; then
+  if [[ "${EXISTING_GID}" != "${PGID}" ]]; then
     echo "ERROR: Group (omada) has an unexpected GID; was expecting '${PGID}' but found '${EXISTING_GID}'!"
     exit 1
   fi
@@ -74,7 +72,7 @@ if id -u omada >/dev/null 2>&1; then
   # exiting user found; also make sure the omada user matches the UID
   echo "INFO: User (omada) exists; skipping creation"
   EXISTING_UID="$(id -u omada)"
-  if [ "${EXISTING_UID}" != "${PUID}" ]; then
+  if [[ "${EXISTING_UID}" != "${PUID}" ]]; then
     echo "ERROR: User (omada) has an unexpected UID; was expecting '${PUID}' but found '${EXISTING_UID}'!"
     exit 1
   fi
@@ -96,7 +94,7 @@ fi
 DEFAULT_FILES="/opt/tplink/EAPController/properties.defaults/*"
 for FILE in ${DEFAULT_FILES}; do
   BASENAME=$(basename "${FILE}")
-  if [ ! -f "/opt/tplink/EAPController/properties/${BASENAME}" ]; then
+  if [[ ! -f "/opt/tplink/EAPController/properties/${BASENAME}" ]]; then
     echo "INFO: Properties file '${BASENAME}' missing, restoring default file..."
     cp "${FILE}" "/opt/tplink/EAPController/properties/${BASENAME}"
     chown omada:omada "/opt/tplink/EAPController/properties/${BASENAME}"
@@ -107,7 +105,7 @@ done
 echo "INFO: Time zone set to '${TZ}'"
 
 # append smallfiles if set to true
-if [ "${SMALL_FILES}" = "true" ]; then
+if [[ "${SMALL_FILES}" = "true" ]]; then
   echo "WARN: smallfiles was passed but is not supported in >= 4.1 with the WiredTiger engine in use by MongoDB"
   echo "INFO: Skipping setting smallfiles option"
 fi
@@ -124,9 +122,9 @@ for ELEM in MANAGE_HTTP_PORT MANAGE_HTTPS_PORT PORTAL_HTTP_PORT PORTAL_HTTPS_POR
   STORED_PROP_VAL=$(grep -Po "(?<=${KEY}=)([0-9]+)" /opt/tplink/EAPController/properties/omada.properties)
 
   # check to see if we need to set the value
-  if [ "${STORED_PROP_VAL}" != "${END_VAL}" ]; then
+  if [[ "${STORED_PROP_VAL}" != "${END_VAL}" ]]; then
     # check to see if we are trying to bind to privileged port
-    if [ "${END_VAL}" -lt "1024" ] && [ "$(cat /proc/sys/net/ipv4/ip_unprivileged_port_start)" = "1024" ]; then
+    if [[ "${END_VAL}" -lt "1024" ]] && [[ "$(cat /proc/sys/net/ipv4/ip_unprivileged_port_start)" = "1024" ]]; then
       echo "ERROR: Unable to set '${KEY}' to ${END_VAL}; 'ip_unprivileged_port_start' has not been set.  See https://github.com/mbentley/docker-omada-controller#unprivileged-ports"
       exit 1
     fi
@@ -141,7 +139,7 @@ for ELEM in MANAGE_HTTP_PORT MANAGE_HTTPS_PORT PORTAL_HTTP_PORT PORTAL_HTTPS_POR
 done
 
 # make sure that the html directory exists
-if [ ! -d "/opt/tplink/EAPController/data/html" ] && [ -f "/opt/tplink/EAPController/data-html.tar.gz" ]; then
+if [[ ! -d "/opt/tplink/EAPController/data/html" ]] && [[ -f "/opt/tplink/EAPController/data-html.tar.gz" ]]; then
   # missing directory; extract from original
   echo "INFO: Report HTML directory missing; extracting backup to '/opt/tplink/EAPController/data/html'"
   tar zxvf /opt/tplink/EAPController/data-html.tar.gz -C /opt/tplink/EAPController/data
@@ -149,7 +147,7 @@ if [ ! -d "/opt/tplink/EAPController/data/html" ] && [ -f "/opt/tplink/EAPContro
 fi
 
 # make sure that the pdf directory exists
-if [ ! -d "/opt/tplink/EAPController/data/pdf" ]; then
+if [[ ! -d "/opt/tplink/EAPController/data/pdf" ]]; then
   # missing directory; extract from original
   echo "INFO: Report PDF directory missing; creating '/opt/tplink/EAPController/data/pdf'"
   mkdir /opt/tplink/EAPController/data/pdf
@@ -161,7 +159,7 @@ for DIR in data logs properties; do
   OWNER="$(stat -c '%u' /opt/tplink/EAPController/${DIR})"
   GROUP="$(stat -c '%g' /opt/tplink/EAPController/${DIR})"
 
-  if [ "${OWNER}" != "${PUID}" ] || [ "${GROUP}" != "${PGID}" ]; then
+  if [[ "${OWNER}" != "${PUID}" ]] || [[ "${GROUP}" != "${PGID}" ]]; then
     # notify user that uid:gid are not correct and fix them
     echo "WARN: Ownership not set correctly on '/opt/tplink/EAPController/${DIR}'; setting correct ownership (omada:omada)"
     chown -R omada:omada "/opt/tplink/EAPController/${DIR}"
@@ -221,12 +219,12 @@ if [ -f "/cert/${SSL_KEY_NAME}" ] && [ -f "/cert/${SSL_CERT_NAME}" ]; then
 fi
 
 # re-enable disabled TLS versions 1.0 & 1.1
-if [ "${TLS_1_11_ENABLED}" = "true" ]; then
+if [[ "${TLS_1_11_ENABLED}" = "true" ]]; then
   echo "INFO: Re-enabling TLS 1.0 & 1.1"
-  if [ -f "/etc/java-8-openjdk/security/java.security" ]; then
+  if [[ -f "/etc/java-8-openjdk/security/java.security" ]]; then
     # openjdk8
     sed -i 's#^jdk.tls.disabledAlgorithms=SSLv3, TLSv1, TLSv1.1,#jdk.tls.disabledAlgorithms=SSLv3,#' /etc/java-8-openjdk/security/java.security
-  elif [ -f "/etc/java-17-openjdk/security/java.security" ]; then
+  elif [[ -f "/etc/java-17-openjdk/security/java.security" ]]; then
     # openjdk17
     sed -i 's#^jdk.tls.disabledAlgorithms=SSLv3, TLSv1, TLSv1.1,#jdk.tls.disabledAlgorithms=SSLv3,#' /etc/java-17-openjdk/security/java.security
   else
@@ -236,17 +234,17 @@ if [ "${TLS_1_11_ENABLED}" = "true" ]; then
 fi
 
 # see if any of these files exist; if so, do not start as they are from older versions
-if [ -f /opt/tplink/EAPController/data/db/tpeap.0 ] || [ -f /opt/tplink/EAPController/data/db/tpeap.1 ] || [ -f /opt/tplink/EAPController/data/db/tpeap.ns ]; then
+if [[ -f /opt/tplink/EAPController/data/db/tpeap.0 ]] || [[ -f /opt/tplink/EAPController/data/db/tpeap.1 ]] || [[ -f /opt/tplink/EAPController/data/db/tpeap.ns ]]; then
   echo "ERROR: The data volume mounted to /opt/tplink/EAPController/data appears to have data from a previous version!"
   echo "  Follow the upgrade instructions at https://github.com/mbentley/docker-omada-controller#upgrading-to-41"
   exit 1
 fi
 
 # check to see if the CMD passed contains the text "com.tplink.omada.start.OmadaLinuxMain" which is the old classpath from 4.x
-if [ "$(
+if [[ "$(
   echo "${@}" | grep -q "com.tplink.omada.start.OmadaLinuxMain"
   echo $?
-)" = "0" ]; then
+)" = "0" ]]; then
   echo -e "\n############################"
   echo "WARNING: CMD from 4.x detected!  It is likely that this container will fail to start properly with a \"Could not find or load main class com.tplink.omada.start.OmadaLinuxMain\" error!"
   echo "  See the note on old CMDs at https://github.com/mbentley/docker-omada-controller/blob/master/KNOWN_ISSUES.md#upgrade-issues for details on why and how to resolve the issue."
@@ -254,7 +252,7 @@ if [ "$(
 fi
 
 # compare version from the image to the version stored in the persistent data (last ran version)
-if [ -f "/opt/tplink/EAPController/IMAGE_OMADA_VER.txt" ]; then
+if [[ -f "/opt/tplink/EAPController/IMAGE_OMADA_VER.txt" ]]; then
   # file found; read the version that is in the image
   IMAGE_OMADA_VER="$(cat /opt/tplink/EAPController/IMAGE_OMADA_VER.txt)"
 else
@@ -263,7 +261,7 @@ else
 fi
 
 # load LAST_RAN_OMADA_VER, if file present
-if [ -f "/opt/tplink/EAPController/data/LAST_RAN_OMADA_VER.txt" ]; then
+if [[ -f "/opt/tplink/EAPController/data/LAST_RAN_OMADA_VER.txt" ]]; then
   # file found; read the version that was last recorded
   LAST_RAN_OMADA_VER="$(cat /opt/tplink/EAPController/data/LAST_RAN_OMADA_VER.txt)"
 else
@@ -272,7 +270,7 @@ else
 fi
 
 # use sort to check which version is newer; should sort the newest version to the top
-if [ "$(printf '%s\n' "${IMAGE_OMADA_VER}" "${LAST_RAN_OMADA_VER}" | sort -rV | head -n1)" != "${IMAGE_OMADA_VER}" ]; then
+if [[ "$(printf '%s\n' "${IMAGE_OMADA_VER}" "${LAST_RAN_OMADA_VER}" | sort -rV | head -n1)" != "${IMAGE_OMADA_VER}" ]]; then
   # version in the image is didn't match newest image version; this means we are trying to start and older version
   echo "ERROR: The version from the image (${IMAGE_OMADA_VER}) is older than the last version executed (${LAST_RAN_OMADA_VER})!  Refusing to start to prevent data loss!"
   echo "  To bypass this check, remove /opt/tplink/EAPController/data/LAST_RAN_OMADA_VER.txt only if you REALLY know what you're doing!"
@@ -285,12 +283,12 @@ fi
 echo "INFO: Starting Omada Controller as user omada"
 
 # tail the omada logs if set to true
-if [ "${SHOW_SERVER_LOGS}" = "true" ]; then
+if [[ "${SHOW_SERVER_LOGS}" = "true" ]]; then
   gosu omada tail -F -n 0 /opt/tplink/EAPController/logs/server.log &
 fi
 
 # tail the mongodb logs if set to true
-if [ "${SHOW_MONGODB_LOGS}" = "true" ]; then
+if [[ "${SHOW_MONGODB_LOGS}" = "true" ]]; then
   gosu omada tail -F -n 0 /opt/tplink/EAPController/logs/mongod.log &
 fi
 

@@ -1,6 +1,4 @@
-#!/bin/sh
-
-# Copyright © 2022 Schubert Anselme <schubert@anselm.es>
+#!/bin/bash
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-set -eux
+set -e
 
 # set variables to get version info
-if [ -n "${INSTALL_VER}" ]; then
+if [[ -n "${INSTALL_VER}" ]]; then
   # INSTALL_VER was not empty
   OMADA_MAJOR_MINOR_VER="${INSTALL_VER}" # output example: 5.5
 else
@@ -87,7 +85,7 @@ patch_log4j() {
   set -e
 
   # check results
-  if [ "${SIGNATURE_TEST1}" = "0" ]; then
+  if [[ "${SIGNATURE_TEST1}" = "0" ]]; then
     echo -e "INFO: signature validation of downloaded log4j binaries complete!\n"
   else
     echo -e "ERROR: signature validation of downloaded log4j binaries failed!"
@@ -121,7 +119,7 @@ patch_log4j() {
   set -e
 
   # check results of the checksum verification
-  if [ "${SHA512SUM_TEST1}" = "0" ] || [ "${SHA512SUM_TEST2}" = "0" ] || [ "${SHA512SUM_TEST3}" = "0" ]; then
+  if [[ "${SHA512SUM_TEST1}" = "0" ]] || [[ "${SHA512SUM_TEST2}" = "0" ]] || [[ "${SHA512SUM_TEST3}" = "0" ]]; then
     echo -e "INFO: checksum validation of downloaded log4j binaries complete!\n"
   else
     echo -e "ERROR: checksum validation of downloaded log4j binaries failed!"

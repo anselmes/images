@@ -1,11 +1,12 @@
 diff --git a/src/maasserver/preseed.py b/src/maasserver/preseed.py
-index c692969..5b63327 100644
+index 36c656775..5da8f0312 100644
 --- a/src/maasserver/preseed.py
 +++ b/src/maasserver/preseed.py
-@@ -250,7 +250,26 @@ def compose_curtin_kernel_preseed(node):
-     if node.get_osystem() == "custom":
-         return []
-
+@@ -245,7 +245,27 @@ def compose_curtin_kernel_preseed(node):
+     The BootResourceFile table contains a mapping between hwe kernels and
+     Ubuntu package names. If this mapping is missing we fall back to letting
+     Curtin figure out which kernel should be installed"""
++
 +    # previous logic to retrieve kpackage parameter
      kpackage = BootResource.objects.get_kpackage_for_node(node)
 +

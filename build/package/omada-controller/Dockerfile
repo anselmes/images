@@ -1,5 +1,3 @@
-# Copyright © 2022 Schubert Anselme <schubert@anselm.es>
-
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -14,10 +12,15 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # rebased/repackaged base image that only updates existing packages
-ARG BASE=anselmes.jfrog.io/container/ubuntu:20.04
-FROM ${BASE}
-LABEL maintainer="Schubert Anselme <schubert@anselm.es>"
-LABEL org.opencontainers.image.source="https://github.com/anselmes/images/omada-controller"
+FROM ubuntu:20.04
+
+# TODO: add labels
+LABEL org.opencontainers.image.authors=""
+LABEL org.opencontainers.image.url=""
+LABEL org.opencontainers.image.documentation=""
+LABEL org.opencontainers.image.source=""
+LABEL org.opencontainers.image.vendor=""
+LABEL org.opencontainers.image.licenses=""
 
 COPY healthcheck.sh install.sh log4j_patch.sh /
 
@@ -25,9 +28,9 @@ COPY healthcheck.sh install.sh log4j_patch.sh /
 ARG INSTALL_VER="5.6"
 
 # install omada controller (instructions taken from install.sh) & patch log4j, if applicable
-RUN /install.sh && \
-  /log4j_patch.sh && \
-  rm /install.sh /log4j_patch.sh
+RUN /install.sh \
+  && /log4j_patch.sh \
+  && rm /install.sh /log4j_patch.sh
 
 COPY entrypoint.sh /
 
