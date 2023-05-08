@@ -49,7 +49,7 @@ RUN apt-get update -qq \
 RUN mkdir -p /opt/maas/ && tar -cvzf /opt/maas/var-lib-maas.tgz /var/lib/maas
 
 # register ourselves with the region controller
-COPY ../../../scripts/register-rack-controller.service /lib/systemd/system/register-rack-controller.service
+COPY ../register-rack-controller.service /lib/systemd/system/register-rack-controller.service
 RUN systemctl enable register-rack-controller.service
 
 # Patch so that Calico interfaces are ignored
@@ -66,7 +66,7 @@ RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch 
 RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch redfish.py < /tmp/redfish_retries.patch
 
 # echo journalctl logs to the container's stdout
-COPY ../../../scripts/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
+COPY ../journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
 RUN systemctl enable journalctl-to-tty.service
 
 # quiet sudo for the maas user

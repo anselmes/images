@@ -1,26 +1,26 @@
 FROM docker.io/golang:1.20.4-buster as builder
 
+ARG MAKE_TARGET=build
+
+ENV GO111MODULE=on
 SHELL [ "/bin/bash", "-cex" ]
 
-RUN git clone https://github.com/stackanetes/kubernetes-entrypoint.git /usr/src/kubernetes-entrypoint
+RUN git clone --depth=1 https://github.com/airshipit/kubernetes-entrypoint.git
+WORKDIR /kubernetes-entrypoint
 
-WORKDIR /usr/src/kubernetes-entrypoint
-ENV GO111MODULE=on
-
-RUN make get-modules
-
-ARG MAKE_TARGET=build
-RUN make ${MAKE_TARGET}
+RUN make get-modules \
+  && make ${MAKE_TARGET}
 
 FROM ubuntu:22.04 as release
 COPY --from=builder \
-  /usr/src/kubernetes-entrypoint/bin/kubernetes-entrypoint \
+  /kubernetes-entrypoint/bin/kubernetes-entrypoint \
   /usr/local/bin/kubernetes-entrypoint
 
-RUN apt update -y
-RUN apt install -y \
-  --no-install-recommends \
-  coreutils
+RUN apt-get update -qq \
+  && apt-get install -y \
+  coreutils \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 USER 65534
 ENTRYPOINT [ "/usr/local/bin/kubernetes-entrypoint" ]

@@ -10,19 +10,11 @@ RUN apk add --no-cache \
   git \
   nodejs \
   npm
-RUN git clone https://gitea.com/gitea/act_runner.git \
+RUN git clone --depth=1 https://gitea.com/gitea/act_runner.git \
   && cd act_runner \
   && make build
 
 FROM alpine:3.17
-
-# TODO: add labels
-LABEL org.opencontainers.image.authors=""
-LABEL org.opencontainers.image.url=""
-LABEL org.opencontainers.image.documentation=""
-LABEL org.opencontainers.image.source=""
-LABEL org.opencontainers.image.vendor=""
-LABEL org.opencontainers.image.licenses=""
 
 WORKDIR /var/lib/gitea
 

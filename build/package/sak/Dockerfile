@@ -17,11 +17,11 @@ LABEL org.opencontainers.image.licenses="GPL-3.0-or-later"
 ENV DEBCONF_NONINTERACTIVE_SEEN=true
 ENV DEBIAN_FRONTEND=noninteractive
 
-COPY ./kube/01-docker.sh /opt/docker.sh
-COPY ./kube/02-kubernetes.sh /opt/kubernetes.sh
+COPY scripts/docker.sh /opt/docker.sh
+COPY scripts/kubernetes.sh /opt/kubernetes.sh
 
-RUN apt update -y \
-  && apt install -y --no-install-recommends \
+RUN apt-get update -qq \
+  && apt-get install -y \
   bridge-utils \
   ca-certificates \
   ceph-common \
@@ -39,8 +39,7 @@ RUN apt update -y \
   make \
   nmap \
   patch \
-  python-heatclient \
-  python-openstackclient \
+  python3-openstackclient \
   python3-pip \
   rbd-nbd \
   socat \
@@ -88,7 +87,7 @@ RUN /opt/docker.sh \
   && /opt/kubernetes.sh
 
 # Housekeeping
-RUN apt clean -y \
+RUN apt-get clean -y \
   && rm -rf \
   /var/cache/debconf/* \
   /var/lib/apt/lists/* \

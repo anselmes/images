@@ -76,7 +76,7 @@ RUN cd /usr/lib/python3/dist-packages/maasserver/api && patch partitions.py < /t
 RUN cd /usr/lib/python3/dist-packages/maasserver/models && patch ownerdata.py < /tmp/regex_tags.patch
 
 # echo journalctl logs to the container's stdout
-COPY ../../../scripts/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
+COPY ../journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
 RUN systemctl enable journalctl-to-tty.service
 
 # quiet sudo for the maas user

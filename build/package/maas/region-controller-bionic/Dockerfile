@@ -75,7 +75,7 @@ RUN cd /usr/lib/python3/dist-packages/maasserver/api && patch partitions.py < /t
 RUN cd /usr/lib/python3/dist-packages/metadataserver/user_data/templates/snippets/ && patch maas_ipmi_autodetect_tool.py < /tmp/maas_ipmi_autodetect_tool.patch
 
 # echo journalctl logs to the container's stdout
-COPY ../../../scripts/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
+COPY ../journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
 RUN systemctl enable journalctl-to-tty.service
 
 # quiet sudo for the maas user

@@ -24,7 +24,7 @@ RUN apt-get -qq update \
     apache2 \
     gpgv \
     ubuntu-cloudimage-keyring \
-    python-certifi --no-install-recommends \
+    python3-certifi --no-install-recommends \
     file
 
 RUN sstream-mirror --keyring=/usr/share/keyrings/ubuntu-cloudimage-keyring.gpg ${SSTREAM_IMAGE} \
