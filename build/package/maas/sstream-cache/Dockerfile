@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Copyright (c) 2023 Schubert Anselme <schubert@anselm.es>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -16,6 +17,9 @@
 ARG FROM=ubuntu:18.04
 
 FROM ${FROM}
+=======
+FROM ubuntu:22.04
+>>>>>>> 013aac0 (Update container image (#32))
 
 LABEL org.opencontainers.image.authors="airship-discuss@lists.airshipit.org, irc://#airshipit@freenode"
 LABEL org.opencontainers.image.url="https://airshipit.org"
@@ -35,6 +39,26 @@ ARG SSTREAM_IMAGE=https://images.maas.io/ephemeral-v3/stable/
 ARG SSTREAM_RELEASE=bionic
 
 ENV DEBIAN_FRONTEND noninteractive
+<<<<<<< HEAD
+=======
+
+RUN apt-get -qq update \
+  && apt-get install -y simplestreams \
+    apache2 \
+    gpgv \
+    ubuntu-cloudimage-keyring \
+    python-certifi --no-install-recommends \
+    file
+
+RUN sstream-mirror --keyring=/usr/share/keyrings/ubuntu-cloudimage-keyring.gpg ${SSTREAM_IMAGE} \
+    /var/www/html/maas/images/ephemeral-v3/daily 'arch=amd64' "release~${SSTREAM_RELEASE}" --max=1 --progress
+
+RUN sstream-mirror --keyring=/usr/share/keyrings/ubuntu-cloudimage-keyring.gpg ${SSTREAM_IMAGE} \
+   /var/www/html/maas/images/ephemeral-v3/daily 'os~(grub*|pxelinux)' --max=1 --progress
+
+RUN sh -c 'echo "" > /etc/apache2/ports.conf'
+
+>>>>>>> 013aac0 (Update container image (#32))
 ENV APACHE_RUN_USER www-data
 ENV APACHE_RUN_GROUP www-data
 ENV APACHE_PID_FILE /var/run/apache2.pid

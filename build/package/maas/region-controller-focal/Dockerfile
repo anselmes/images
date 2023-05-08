@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Copyright (c) 2023 Schubert Anselme <schubert@anselm.es>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -13,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+=======
+>>>>>>> 013aac0 (Update container image (#32))
 FROM ubuntu:20.04
 
 LABEL org.opencontainers.image.authors="airship-discuss@lists.airshipit.org, irc://#airshipit@freenode"
@@ -66,6 +69,7 @@ RUN apt-get -qq update \
 RUN mkdir -p /opt/maas/ && tar -cvzf /opt/maas/var-lib-maas.tgz /var/lib/maas
 
 # MAAS workarounds
+<<<<<<< HEAD
 COPY build/patch/maas-focal/route.patch /tmp/route.patch
 COPY build/patch/maas-focal/kernel_package.patch /tmp/kernel_package.patch
 COPY build/patch/maas-focal/bios_grub_partition.patch /tmp/bios_grub_partition.patch
@@ -79,6 +83,21 @@ COPY build/patch/maas-focal/region_secret_rotate.patch /tmp/region_secret_rotate
 COPY build/patch/maas-focal/partitiontable_does_not_exist.patch /tmp/partitiontable_does_not_exist.patch
 # Allow tags with '/' symbols
 COPY build/patch/maas-focal/regex_tags.patch /tmp/regex_tags.patch
+=======
+COPY route.patch /tmp/route.patch
+COPY kernel_package.patch /tmp/kernel_package.patch
+COPY bios_grub_partition.patch /tmp/bios_grub_partition.patch
+# sh8121att: allow all requests via the proxy to allow it to work
+# behind ingress
+COPY proxy_acl.patch /tmp/proxy_acl.patch
+# Patch to add retrying to MaaS BMC user setup, and improve exception handling
+COPY configure_ipmi_user.patch /tmp/configure_ipmi_user.patch
+COPY secure_headers.patch /tmp/secure_headers.patch
+COPY region_secret_rotate.patch /tmp/region_secret_rotate.patch
+COPY partitiontable_does_not_exist.patch /tmp/partitiontable_does_not_exist.patch
+# Allow tags with '/' symbols
+COPY regex_tags.patch /tmp/regex_tags.patch
+>>>>>>> 013aac0 (Update container image (#32))
 
 RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed_network.py < /tmp/route.patch
 RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed.py < /tmp/kernel_package.patch
@@ -91,7 +110,11 @@ RUN cd /usr/lib/python3/dist-packages/maasserver/api && patch partitions.py < /t
 RUN cd /usr/lib/python3/dist-packages/maasserver/models && patch ownerdata.py < /tmp/regex_tags.patch
 
 # echo journalctl logs to the container's stdout
+<<<<<<< HEAD
 COPY config/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
+=======
+COPY ../../../scripts/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
+>>>>>>> 013aac0 (Update container image (#32))
 RUN systemctl enable journalctl-to-tty.service
 
 # quiet sudo for the maas user

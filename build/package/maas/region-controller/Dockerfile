@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Copyright (c) 2023 Schubert Anselme <schubert@anselm.es>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -13,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+=======
+>>>>>>> 013aac0 (Update container image (#32))
 FROM ubuntu:22.04
 
 LABEL org.opencontainers.image.authors='airship-discuss@lists.airshipit.org, irc://#airshipit@freenode'
@@ -32,44 +35,38 @@ ARG no_proxy
 ENV DEBIAN_FRONTEND noninteractive
 ENV container docker
 
-ENV MAAS_VERSION 1:3.0.0-10029-g.986ea3e45-0ubuntu1~20.04.1
+ENV MAAS_VERSION 1:3.3.1-13169-g.94920eb1e-0ubuntu1~22.04.1
+
+# Remove systemd-timesyncd, which conflicts with chrony
+RUN apt-get remove -y --purge systemd-timesyncd
 
 RUN apt-get -qq update \
-  && apt-get install -y \
-  avahi-daemon \
-  jq \
-  patch \
-  software-properties-common \
-  sudo \
-  systemd \
-  ca-certificates \
-  # NOTE: required for maas-syslog
-  # Error: failed to create containerd task:
-  # failed to create shim: OCI runtime create failed: container_linux.go:380:
-  # starting container process caused: exec: "cron":
-  # executable file not found in $PATH: unknown
-  cron \
-  # Don't start any optional services except for the few we need.
-  # (specifically, don't start avahi-daemon)
-  && find /etc/systemd/system \
-  /lib/systemd/system \
-  -path '*.wants/*' \
-  -not -name '*journald*' \
-  -not -name '*systemd-tmpfiles*' \
-  -not -name '*systemd-user-sessions*' \
-  -exec rm \{} \; \
-  && systemctl set-default multi-user.target \
-  # Install maas from the ppa
-  && add-apt-repository -yu ppa:maas/3.0 \
-  && apt-get install -y \
-  maas-region-api=$MAAS_VERSION \
-  # tcpdump is required by /usr/lib/maas/beacon-monitor
-  tcpdump \
-  && rm -rf /var/lib/apt/lists/*
-
-# Update latest packages, including security updates
-RUN apt-get -qq update \
-  && apt-get upgrade -y
+ && apt-get install -y \
+        avahi-daemon \
+        jq \
+        patch \
+        software-properties-common \
+        sudo \
+        systemd \
+        cron \
+        ca-certificates \
+# Don't start any optional services except for the few we need.
+# (specifically, don't start avahi-daemon)
+ && find /etc/systemd/system \
+         /lib/systemd/system \
+         -path '*.wants/*' \
+         -not -name '*journald*' \
+         -not -name '*systemd-tmpfiles*' \
+         -not -name '*systemd-user-sessions*' \
+         -exec rm \{} \; \
+ && systemctl set-default multi-user.target \
+# Install maas from the ppa
+ && add-apt-repository -yu ppa:maas/3.3 \
+ && apt-get install -y \
+        maas-region-api=$MAAS_VERSION \
+        # tcpdump is required by /usr/lib/maas/beacon-monitor
+        tcpdump \
+ && rm -rf /var/lib/apt/lists/*
 
 # Preserve the directory structure, permissions, and contents of /var/lib/maas
 RUN mkdir -p /opt/maas/ && tar -cvzf /opt/maas/var-lib-maas.tgz /var/lib/maas
@@ -81,18 +78,28 @@ COPY bios_grub_partition.patch /tmp/bios_grub_partition.patch
 # sh8121att: allow all requests via the proxy to allow it to work
 # behind ingress
 COPY proxy_acl.patch /tmp/proxy_acl.patch
-COPY region_secret_rotate.patch /tmp/region_secret_rotate.patch
-COPY partitiontable_does_not_exists.patch /tmp/partitiontable_does_not_exists.patch
+# Patch to add retrying to MaaS BMC user setup, and improve exception handling
+COPY configure_ipmi_user.patch /tmp/configure_ipmi_user.patch
+COPY secure_headers.patch /tmp/secure_headers.patch
+COPY partitiontable_does_not_exist.patch /tmp/partitiontable_does_not_exist.patch
+# Allow tags with '/' symbols
+COPY regex_tags.patch /tmp/regex_tags.patch
 
 RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed_network.py < /tmp/route.patch
-# RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed.py < /tmp/kernel_package.patch
-# RUN cd /usr/lib/python3/dist-packages/maasserver/models && patch partition.py < /tmp/bios_grub_partition.patch
-RUN cd /usr/lib/python3/dist-packages/maasserver && patch security.py < /tmp/region_secret_rotate.patch
+RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed.py < /tmp/kernel_package.patch
+RUN cd /usr/lib/python3/dist-packages/maasserver/models && patch partition.py < /tmp/bios_grub_partition.patch
+RUN cd /usr/lib/python3/dist-packages/metadataserver/builtin_scripts/commissioning_scripts && patch bmc_config.py < /tmp/configure_ipmi_user.patch
 RUN cd /usr/lib/python3/dist-packages/provisioningserver/templates/proxy && patch maas-proxy.conf.template < /tmp/proxy_acl.patch
-RUN cd /usr/lib/python3/dist-packages/maasserver/api && patch partitions.py < /tmp/partitiontable_does_not_exists.patch
+RUN cd /usr/lib/python3/dist-packages/twisted/web && patch server.py < /tmp/secure_headers.patch
+RUN cd /usr/lib/python3/dist-packages/maasserver/api && patch partitions.py < /tmp/partitiontable_does_not_exist.patch
+RUN cd /usr/lib/python3/dist-packages/maasserver/models && patch ownerdata.py < /tmp/regex_tags.patch
 
 # echo journalctl logs to the container's stdout
+<<<<<<< HEAD
 COPY config/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
+=======
+COPY ../../../scripts/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
+>>>>>>> 013aac0 (Update container image (#32))
 RUN systemctl enable journalctl-to-tty.service
 
 # quiet sudo for the maas user

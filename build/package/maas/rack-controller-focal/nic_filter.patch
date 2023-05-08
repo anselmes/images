@@ -1,8 +1,8 @@
 diff --git a/src/provisioningserver/utils/network.py b/src/provisioningserver/utils/network.py
-index 4ac6962..5381bc4 100644
+index 7895227..0f665ad 100644
 --- a/src/provisioningserver/utils/network.py
 +++ b/src/provisioningserver/utils/network.py
-@@ -1134,6 +1134,8 @@ def get_all_interfaces_definition(
+@@ -1128,6 +1128,8 @@ def get_all_interfaces_definition(
          # interfaces for guests. By themselves, they're not useful for MAAS to
          # manage.
          "tunnel",

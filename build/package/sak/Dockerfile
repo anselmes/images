@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Copyright (c) 2023 Schubert Anselme <schubert@anselm.es>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -16,6 +17,9 @@
 ARG BASE_IMAGE=ubuntu:20.04
 
 FROM ${BASE_IMAGE}
+=======
+FROM ubuntu:22.04
+>>>>>>> 013aac0 (Update container image (#32))
 
 ARG COSIGN_VERSION=2.0.0
 ARG CRICTL_VERSION=1.26.0
@@ -34,11 +38,19 @@ LABEL org.opencontainers.image.licenses="GPL-3.0-or-later"
 ENV DEBCONF_NONINTERACTIVE_SEEN=true
 ENV DEBIAN_FRONTEND=noninteractive
 
+<<<<<<< HEAD
 COPY scripts/docker.sh /opt/docker.sh
 COPY scripts/kubernetes.sh /opt/kubernetes.sh
 
 RUN apt-get update -qq \
   && apt-get install -y \
+=======
+COPY ./kube/01-docker.sh /opt/docker.sh
+COPY ./kube/02-kubernetes.sh /opt/kubernetes.sh
+
+RUN apt update -y \
+  && apt install -y --no-install-recommends \
+>>>>>>> 013aac0 (Update container image (#32))
   bridge-utils \
   ca-certificates \
   ceph-common \
@@ -56,7 +68,12 @@ RUN apt-get update -qq \
   make \
   nmap \
   patch \
+<<<<<<< HEAD
   python3-openstackclient \
+=======
+  python-heatclient \
+  python-openstackclient \
+>>>>>>> 013aac0 (Update container image (#32))
   python3-pip \
   rbd-nbd \
   socat \
@@ -100,8 +117,16 @@ RUN curl -fsSL https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/
   && mv vault /usr/local/bin/vault \
   && rm -f vault_${VAULT_VERSION}_linux_$(dpkg --print-architecture).zip
 
+<<<<<<< HEAD
 # Housekeeping
 RUN apt-get clean -y \
+=======
+RUN /opt/docker.sh \
+  && /opt/kubernetes.sh
+
+# Housekeeping
+RUN apt clean -y \
+>>>>>>> 013aac0 (Update container image (#32))
   && rm -rf \
   /var/cache/debconf/* \
   /var/lib/apt/lists/* \
