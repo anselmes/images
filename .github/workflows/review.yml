@@ -6,7 +6,6 @@ permissions:
   contents: read
 
 jobs:
-  # Dependency review
   review:
     runs-on: ubuntu-latest
     steps:
