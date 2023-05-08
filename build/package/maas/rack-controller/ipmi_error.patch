@@ -1,5 +1,5 @@
 diff --git a/src/provisioningserver/drivers/power/ipmi.py b/src/provisioningserver/drivers/power/ipmi.py
-index 70201e86e..26625e21d 100644
+index 09f3295..2971bd2 100644
 --- a/src/provisioningserver/drivers/power/ipmi.py
 +++ b/src/provisioningserver/drivers/power/ipmi.py
 @@ -155,6 +155,13 @@ IPMI_ERRORS = {
@@ -16,7 +16,7 @@ index 70201e86e..26625e21d 100644
      "could not find inband device": {
          "message": (
              "An inband device could not be found."
-@@ -308,7 +315,7 @@ class IPMIPowerDriver(PowerDriver):
+@@ -310,7 +317,7 @@ class IPMIPowerDriver(PowerDriver):
          ),
      ]
      ip_extractor = make_ip_extractor("power_address")
