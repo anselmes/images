@@ -1,15 +1,8 @@
 # Images
 
-[![Lint Code Base](https://github.com/anselmes/images/actions/workflows/super-linter.yml/badge.svg)](https://github.com/anselmes/images/actions/workflows/super-linter.yml)
-[![Dependency Review](https://github.com/anselmes/images/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/anselmes/images/actions/workflows/dependency-review.yml)
-[![GitHub Pages](https://github.com/anselmes/images/actions/workflows/pages.yml/badge.svg)](https://github.com/anselmes/images/actions/workflows/pages.yml)
-[![Docker](https://github.com/anselmes/images/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/anselmes/images/actions/workflows/docker-publish.yml)
-
 Container Images
 
 ---
-
-Copyright © 2022 Schubert Anselme <schubert@anselm.es>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
