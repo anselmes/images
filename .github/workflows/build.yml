@@ -34,6 +34,10 @@ jobs:
     strategy:
       matrix:
         include:
+          - name: sak
+            context: build/package/sak
+          - name: kubernetes-entrypoint
+            context: build/package/kubernetes-entrypoint
           - name: gitea-runner
             context: build/package/gitea-runner
           - name: omada-controller
