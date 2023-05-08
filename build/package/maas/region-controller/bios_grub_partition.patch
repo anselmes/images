@@ -1,0 +1,12 @@
+diff --git a/src/maasserver/models/partition.py b/src/maasserver/models/partition.py
+index 84a8fba..c62f25f 100644
+--- a/src/maasserver/models/partition.py
++++ b/src/maasserver/models/partition.py
+@@ -211,6 +211,7 @@ class Partition(CleanSave, TimestampedModel):
+                 arch == "amd64"
+                 and bios_boot_method != "uefi"
+                 and block_device.type == "physical"
++                and block_device.id == boot_disk.id
+             )
+             if need_prep_partition or need_bios_grub:
+                 index = 2

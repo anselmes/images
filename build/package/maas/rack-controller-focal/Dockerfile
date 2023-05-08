@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:20.04
 
 LABEL org.opencontainers.image.authors="airship-discuss@lists.airshipit.org, irc://#airshipit@freenode"
 LABEL org.opencontainers.image.url="https://airshipit.org"
@@ -17,10 +17,7 @@ ARG no_proxy
 ENV DEBIAN_FRONTEND noninteractive
 ENV container docker
 
-ENV MAAS_VERSION 1:3.3.1-13169-g.94920eb1e-0ubuntu1~22.04.1
-
-# Remove systemd-timesyncd, which conflicts with chrony
-RUN apt-get remove -y --purge systemd-timesyncd
+ENV MAAS_VERSION 1:3.2.7-12037-g.c688dd446-0ubuntu1~20.04.1
 
 RUN apt-get -qq update \
  && apt-get install -y \
@@ -34,8 +31,8 @@ RUN apt-get -qq update \
         sudo \
         systemd \
         ca-certificates \
-# Don"t start any optional services except for the few we need.
-# (specifically, don"t start avahi-daemon, isc-dhcp-server, or libvirtd)
+# Don't start any optional services except for the few we need.
+# (specifically, don't start avahi-daemon, isc-dhcp-server, or libvirtd)
  && find /etc/systemd/system \
          /lib/systemd/system \
          -path '*.wants/*' \
@@ -45,7 +42,7 @@ RUN apt-get -qq update \
          -exec rm \{} \; \
  && systemctl set-default multi-user.target \
 # Install maas from the ppa
- && add-apt-repository -yu ppa:maas/3.3 \
+ && add-apt-repository -yu ppa:maas/3.2 \
  && apt-get install -y \
         maas-rack-controller=$MAAS_VERSION \
  && rm -rf /var/lib/apt/lists/*

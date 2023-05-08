@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Copyright © 2022 Schubert Anselme <schubert@anselm.es>
-
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -15,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-set -eux
+set -e
 
 # omada controller dependency and package installer script for versions 4.x and 5.x
 
@@ -172,7 +170,7 @@ mkdir "${OMADA_DIR}" -vp
 case "${OMADA_MAJOR_VER}" in
 5)
   # see if we are running 5.3.x or greater by checking the minor version
-  if [ "${OMADA_MAJOR_MINOR_VER#*.}" -ge 3 ]; then
+  if [[ "${OMADA_MAJOR_MINOR_VER#*.}" -ge 3 ]]; then
     # 5.3.1 and above moved the keystore directory to be a subdir of data
     NAMES=(bin data properties lib install.sh uninstall.sh)
   else
@@ -211,7 +209,7 @@ case "${OMADA_MAJOR_VER}" in
 esac
 
 # for v5.1 & above, create backup of data/html directory in case it is missing (to be extracted at runtime)
-if [ -d /opt/tplink/EAPController/data/html ]; then
+if [[ -d /opt/tplink/EAPController/data/html ]]; then
   # create backup
   cd /opt/tplink/EAPController/data
   tar zcvf ../data-html.tar.gz html

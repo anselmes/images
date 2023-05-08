@@ -1,11 +1,11 @@
-FROM ubuntu:22.04
+FROM ubuntu:18.04
 
-LABEL org.opencontainers.image.authors='airship-discuss@lists.airshipit.org, irc://#airshipit@freenode'
-LABEL org.opencontainers.image.url='https://airshipit.org'
-LABEL org.opencontainers.image.documentation='https://github.com/openstack/airship-maas'
-LABEL org.opencontainers.image.source='https://git.openstack.org/openstack/airship-maas'
-LABEL org.opencontainers.image.vendor='The Airship Authors'
-LABEL org.opencontainers.image.licenses='Apache-2.0'
+LABEL org.opencontainers.image.authors="airship-discuss@lists.airshipit.org, irc://#airshipit@freenode"
+LABEL org.opencontainers.image.url="https://airshipit.org"
+LABEL org.opencontainers.image.documentation="https://github.com/openstack/airship-maas"
+LABEL org.opencontainers.image.source="https://git.openstack.org/openstack/airship-maas"
+LABEL org.opencontainers.image.vendor="The Airship Authors"
+LABEL org.opencontainers.image.licenses="Apache-2.0"
 
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
@@ -17,10 +17,7 @@ ARG no_proxy
 ENV DEBIAN_FRONTEND noninteractive
 ENV container docker
 
-ENV MAAS_VERSION 1:3.3.1-13169-g.94920eb1e-0ubuntu1~22.04.1
-
-# Remove systemd-timesyncd, which conflicts with chrony
-RUN apt-get remove -y --purge systemd-timesyncd
+ENV MAAS_VERSION 2.8.7-8611-g.f2514168f-0ubuntu1~18.04.1
 
 RUN apt-get -qq update \
  && apt-get install -y \
@@ -30,7 +27,6 @@ RUN apt-get -qq update \
         software-properties-common \
         sudo \
         systemd \
-        cron \
         ca-certificates \
 # Don't start any optional services except for the few we need.
 # (specifically, don't start avahi-daemon)
@@ -43,7 +39,7 @@ RUN apt-get -qq update \
          -exec rm \{} \; \
  && systemctl set-default multi-user.target \
 # Install maas from the ppa
- && add-apt-repository -yu ppa:maas/3.3 \
+ && add-apt-repository -yu ppa:maas/2.8 \
  && apt-get install -y \
         maas-region-api=$MAAS_VERSION \
         # tcpdump is required by /usr/lib/maas/beacon-monitor
@@ -63,18 +59,20 @@ COPY proxy_acl.patch /tmp/proxy_acl.patch
 # Patch to add retrying to MaaS BMC user setup, and improve exception handling
 COPY configure_ipmi_user.patch /tmp/configure_ipmi_user.patch
 COPY secure_headers.patch /tmp/secure_headers.patch
+COPY region_secret_rotate.patch /tmp/region_secret_rotate.patch
 COPY partitiontable_does_not_exist.patch /tmp/partitiontable_does_not_exist.patch
-# Allow tags with '/' symbols
-COPY regex_tags.patch /tmp/regex_tags.patch
+# Avoid enlistment failures due to exceptions during moonshot detect attempts
+COPY maas_ipmi_autodetect_tool.patch /tmp/maas_ipmi_autodetect_tool.patch
 
 RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed_network.py < /tmp/route.patch
 RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed.py < /tmp/kernel_package.patch
 RUN cd /usr/lib/python3/dist-packages/maasserver/models && patch partition.py < /tmp/bios_grub_partition.patch
-RUN cd /usr/lib/python3/dist-packages/metadataserver/builtin_scripts/commissioning_scripts && patch bmc_config.py < /tmp/configure_ipmi_user.patch
+RUN cd /usr/lib/python3/dist-packages/maasserver && patch security.py < /tmp/region_secret_rotate.patch
+RUN cd /usr/lib/python3/dist-packages/metadataserver/user_data/templates/snippets && patch maas_ipmi_autodetect.py < /tmp/configure_ipmi_user.patch
 RUN cd /usr/lib/python3/dist-packages/provisioningserver/templates/proxy && patch maas-proxy.conf.template < /tmp/proxy_acl.patch
 RUN cd /usr/lib/python3/dist-packages/twisted/web && patch server.py < /tmp/secure_headers.patch
 RUN cd /usr/lib/python3/dist-packages/maasserver/api && patch partitions.py < /tmp/partitiontable_does_not_exist.patch
-RUN cd /usr/lib/python3/dist-packages/maasserver/models && patch ownerdata.py < /tmp/regex_tags.patch
+RUN cd /usr/lib/python3/dist-packages/metadataserver/user_data/templates/snippets/ && patch maas_ipmi_autodetect_tool.py < /tmp/maas_ipmi_autodetect_tool.patch
 
 # echo journalctl logs to the container's stdout
 COPY ../../../scripts/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service

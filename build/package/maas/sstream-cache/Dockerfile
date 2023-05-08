@@ -1,12 +1,11 @@
-ARG FROM=ubuntu:20.04
-FROM ${FROM}
+FROM ubuntu:22.04
 
-LABEL org.opencontainers.image.authors='airship-discuss@lists.airshipit.org, irc://#airshipit@freenode'
-LABEL org.opencontainers.image.url='https://airshipit.org'
-LABEL org.opencontainers.image.documentation='https://github.com/openstack/airship-maas'
-LABEL org.opencontainers.image.source='https://git.openstack.org/openstack/airship-maas'
-LABEL org.opencontainers.image.vendor='The Airship Authors'
-LABEL org.opencontainers.image.licenses='Apache-2.0'
+LABEL org.opencontainers.image.authors="airship-discuss@lists.airshipit.org, irc://#airshipit@freenode"
+LABEL org.opencontainers.image.url="https://airshipit.org"
+LABEL org.opencontainers.image.documentation="https://github.com/openstack/airship-maas"
+LABEL org.opencontainers.image.source="https://git.openstack.org/openstack/airship-maas"
+LABEL org.opencontainers.image.vendor="The Airship Authors"
+LABEL org.opencontainers.image.licenses="Apache-2.0"
 
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
@@ -16,28 +15,23 @@ ARG https_proxy
 ARG no_proxy
 
 ARG SSTREAM_IMAGE=https://images.maas.io/ephemeral-v3/stable/
-ARG SSTREAM_RELEASE=focal
+ARG SSTREAM_RELEASE=bionic
 
 ENV DEBIAN_FRONTEND noninteractive
-ENV container docker
 
-RUN apt-get -qq update && \
-  apt install -y simplestreams \
-  apache2 \
-  gpgv \
-  ubuntu-cloudimage-keyring \
-  python-certifi --no-install-recommends \
-  file
-
-# Update latest packages, including security updates
 RUN apt-get -qq update \
-  && apt-get upgrade -y
+  && apt-get install -y simplestreams \
+    apache2 \
+    gpgv \
+    ubuntu-cloudimage-keyring \
+    python-certifi --no-install-recommends \
+    file
 
 RUN sstream-mirror --keyring=/usr/share/keyrings/ubuntu-cloudimage-keyring.gpg ${SSTREAM_IMAGE} \
-  /var/www/html/maas/images/ephemeral-v3/daily 'arch=amd64' "release~${SSTREAM_RELEASE}" --max=1 --progress
+    /var/www/html/maas/images/ephemeral-v3/daily 'arch=amd64' "release~${SSTREAM_RELEASE}" --max=1 --progress
 
 RUN sstream-mirror --keyring=/usr/share/keyrings/ubuntu-cloudimage-keyring.gpg ${SSTREAM_IMAGE} \
-  /var/www/html/maas/images/ephemeral-v3/daily 'os~(grub*|pxelinux)' --max=1 --progress
+   /var/www/html/maas/images/ephemeral-v3/daily 'os~(grub*|pxelinux)' --max=1 --progress
 
 RUN sh -c 'echo "" > /etc/apache2/ports.conf'
 

@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:18.04
 
 LABEL org.opencontainers.image.authors="airship-discuss@lists.airshipit.org, irc://#airshipit@freenode"
 LABEL org.opencontainers.image.url="https://airshipit.org"
@@ -14,28 +14,23 @@ ARG http_proxy
 ARG https_proxy
 ARG no_proxy
 
-ENV DEBIAN_FRONTEND noninteractive
 ENV container docker
+ENV DEBIAN_FRONTEND noninteractive
+ENV MAAS_VERSION 2.8.7-8611-g.f2514168f-0ubuntu1~18.04.1
 
-ENV MAAS_VERSION 1:3.3.1-13169-g.94920eb1e-0ubuntu1~22.04.1
-
-# Remove systemd-timesyncd, which conflicts with chrony
-RUN apt-get remove -y --purge systemd-timesyncd
-
-RUN apt-get -qq update \
+RUN apt-get update -qq \
  && apt-get install -y \
         avahi-daemon \
         isc-dhcp-server \
         jq \
-        libvirt-clients \
-        libvirt-daemon-system\
+        libvirt-bin \
         patch \
         software-properties-common \
         sudo \
         systemd \
         ca-certificates \
-# Don"t start any optional services except for the few we need.
-# (specifically, don"t start avahi-daemon, isc-dhcp-server, or libvirtd)
+# Don't start any optional services except for the few we need.
+# (specifically, don't start avahi-daemon, isc-dhcp-server, or libvirtd)
  && find /etc/systemd/system \
          /lib/systemd/system \
          -path '*.wants/*' \
@@ -45,7 +40,7 @@ RUN apt-get -qq update \
          -exec rm \{} \; \
  && systemctl set-default multi-user.target \
 # Install maas from the ppa
- && add-apt-repository -yu ppa:maas/3.3 \
+ && add-apt-repository -yu ppa:maas/2.8 \
  && apt-get install -y \
         maas-rack-controller=$MAAS_VERSION \
  && rm -rf /var/lib/apt/lists/*
