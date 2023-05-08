@@ -1,4 +1,4 @@
-name: Docker
+name: Build
 
 on:
   # schedule:
@@ -8,9 +8,15 @@ on:
       - main
     tags:
       - v*.*.*
+    paths:
+      - build/package/*
+      - build/package/**/*
   pull_request:
     branches:
       - main
+    paths:
+      - build/package/*
+      - build/package/**/*
 
 env:
   REGISTRY: ""
@@ -18,7 +24,6 @@ env:
   BASE_IMAGE: ubuntu:20.04
 
 jobs:
-  # Build and push Docker images
   build:
     runs-on: ubuntu-latest
     permissions:
