@@ -34,14 +34,25 @@ jobs:
     strategy:
       matrix:
         include:
+          - name: gitea-runner
+            context: build/package/gitea-runner
           - name: omada-controller
             context: build/package/omada-controller
-          - name: region-controller
+          - name: maas-region-controller
             context: build/package/maas/region-controller
-          - name: rack-controller
+          - name: maas-rack-controller
             context: build/package/maas/rack-controller
-          - name: sstream-cache
+          - name: maas-sstream-cache
             context: build/package/maas/sstream-cache
+          # MaaS additional versions
+          # - name: maas-region-controller-focal
+          #   context: build/package/maas/region-controller-focal
+          # - name: maas-rack-controller-focal
+          #   context: build/package/maas/rack-controller-focal
+          # - name: maas-region-controller-bionic
+          #   context: build/package/maas/region-controller-bionic
+          # - name: maas-rack-controller-bionic
+          #   context: build/package/maas/rack-controller-bionic
 
     steps:
       - name: Checkout repository
