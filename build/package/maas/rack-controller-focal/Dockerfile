@@ -51,16 +51,16 @@ RUN apt-get -qq update \
 RUN mkdir -p /opt/maas/ && tar -cvzf /opt/maas/var-lib-maas.tgz /var/lib/maas
 
 # register ourselves with the region controller
-COPY ../../../scripts/register-rack-controller.service /lib/systemd/system/register-rack-controller.service
+COPY config/register-rack-controller.service /lib/systemd/system/register-rack-controller.service
 RUN systemctl enable register-rack-controller.service
 
 # Patch so that Calico interfaces are ignored
-COPY nic_filter.patch /tmp/nic_filter.patch
-COPY secure_headers.patch /tmp/secure_headers.patch
+COPY build/patch/maas-focal/nic_filter.patch /tmp/nic_filter.patch
+COPY build/patch/maas-focal/secure_headers.patch /tmp/secure_headers.patch
 # Patch so maas knows that "BMC error" is retriable
-COPY ipmi_error.patch /tmp/ipmi_error.patch
+COPY build/patch/maas-focal/ipmi_error.patch /tmp/ipmi_error.patch
 # Patch to space redfish request retries apart a bit, to avoid overwhelming the BMC
-COPY redfish_retries.patch /tmp/redfish_retries.patch
+COPY build/patch/maas-focal/redfish_retries.patch /tmp/redfish_retries.patch
 
 RUN cd /usr/lib/python3/dist-packages/provisioningserver/utils && patch network.py < /tmp/nic_filter.patch
 RUN cd /usr/lib/python3/dist-packages/twisted/web && patch server.py < /tmp/secure_headers.patch
@@ -68,7 +68,7 @@ RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch 
 RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch redfish.py < /tmp/redfish_retries.patch
 
 # echo journalctl logs to the container's stdout
-COPY ../../../scripts/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
+COPY config/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
 RUN systemctl enable journalctl-to-tty.service
 
 # quiet sudo for the maas user

@@ -1,8 +1,6 @@
 name: Build
 
 on:
-  # schedule:
-  #   - cron: '35 21 * * *'
   push:
     branches:
       - main
@@ -19,9 +17,11 @@ on:
       - build/package/**/*
 
 env:
-  REGISTRY: ""
+  REGISTRY: docker.io/sanselme
   PLATFORMS: linux/amd64,linux/arm64
-  BASE_IMAGE: ubuntu:20.04
+  BASE_IMAGE: ubuntu:22.04
+  BUILD_IMAGE: golang:1.20-alpine3.17
+  ALPINE_IMAGE: alpine:3.17
 
 jobs:
   build:
@@ -35,28 +35,20 @@ jobs:
       matrix:
         include:
           - name: sak
-            context: build/package/sak
+            path: build/package/sak
           - name: kubernetes-entrypoint
-            context: build/package/kubernetes-entrypoint
+            path: build/package/kubernetes-entrypoint
           - name: gitea-runner
-            context: build/package/gitea-runner
+            path: build/package/gitea-runner
           - name: omada-controller
-            context: build/package/omada-controller
+            path: build/package/omada-controller
           - name: maas-region-controller
-            context: build/package/maas/region-controller
+            path: build/package/maas/region-controller-focal
           - name: maas-rack-controller
-            context: build/package/maas/rack-controller
+            path: build/package/maas/rack-controller-focal
           - name: maas-sstream-cache
-            context: build/package/maas/sstream-cache
-          # MaaS additional versions
-          # - name: maas-region-controller-focal
-          #   context: build/package/maas/region-controller-focal
-          # - name: maas-rack-controller-focal
-          #   context: build/package/maas/rack-controller-focal
-          # - name: maas-region-controller-bionic
-          #   context: build/package/maas/region-controller-bionic
-          # - name: maas-rack-controller-bionic
-          #   context: build/package/maas/rack-controller-bionic
+            path: build/package/maas/sstream-cache
+            args: SSTREAM_RELEASE=focal
 
     steps:
       - name: Checkout repository
@@ -82,23 +74,48 @@ jobs:
         uses: docker/metadata-action@c4ee3adeed93b1fa6a762f209fb01608c1a22f1e
         with:
           images: ${{ env.REGISTRY }}/${{ matrix.name }}
-      # TODO: scan Docker image
+          tags: type=sha,format=long
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@c84f38281176d4c9cdb1626ffafcd6b3911b5d94
         with:
-          context: ${{ matrix.context }}
+          file: ${{ matrix.path }}/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: ${{ env.PLATFORMS }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
-            FROM=${{ env.BASE_IMAGE }}
-      # TODO: sign Docker image
-      # - name: Sign the published Docker image
-      #   if: ${{ github.event_name != 'pull_request' }}
-      #   env:
-      #     COSIGN_EXPERIMENTAL: "true"
-      #     COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-      #     COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-      #   run: echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign --key env://COSIGN_PRIVATE_KEY {}@${{ steps.build-and-push.outputs.digest }}
+            BASE_IMAGE=${{ env.BASE_IMAGE }}
+            BUILD_IMAGE=${{ env.BUILD_IMAGE }}
+            ALPINE_IMAGE=${{ env.ALPINE_IMAGE }}
+            ${{ matrix.args }}
+      # FIXME: replace with aquasecurity/trivy-action@master when it supports multiple images
+      - name: Run Trivy vulnerability scanner
+        uses: docker://ghcr.io/aquasecurity/trivy@sha256:d1796f197930d89590b1cbfbbda9f80ae6e878a1cb77dc652b198dba5c17dcdf
+        with:
+          entrypoint: /bin/sh
+          args: -c "trivy image --clear-cache; for img in ${{ env.found_images }}; do trivy image --exit-code 1 --severity CRITICAL --no-progress --format sarif --output trivy-results.sarif $img; done"
+      # FIXME: upload vulnerability results
+      # - name: Upload Trivy results
+      #   uses: github/codeql-action/upload-sarif@v2
+      #   with:
+      #     sarif_file: trivy-results.sarif
+      - name: Sign the published Docker image
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: cosign sign --key env://COSIGN_PRIVATE_KEY ${TAGS}
+      - name: Create GitHub SBOM
+        uses: aquasecurity/trivy-action@master
+        if: ${{ github.event_name != 'pull_request' }}
+        with:
+          scan-type: fs
+          format: github
+          output: dependency-results.sbom.json
+          image-ref: ${{ steps.meta.outputs.tags }}
+          github-pat: ${{ secrets.GITHUB_TOKEN }}

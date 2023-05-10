@@ -2,12 +2,22 @@
 repo:
   - "*"
 
-# Add 'docker' label to Dockerfile
+# Add 'patch' label to any patch file changes
+patch:
+  - "*.patch"
+
+# Add 'docker' label to Dockerfile changes
 docker:
   - build/package/Dockerfile
   - build/package/**/Dockerfile
 
-# Add 'tooling' label to change within tools and .run
+# Add 'scripts' label to changes within scripts
+scripts:
+  - scripts/*
+  - scripts/*/**
+  - scripts/**/*
+
+# Add 'tooling' label to changes within tools
 tooling:
   - tools/*
   - tools/*/**
