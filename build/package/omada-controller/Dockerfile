@@ -11,32 +11,37 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-# rebased/repackaged base image that only updates existing packages
-FROM ubuntu:20.04
+ARG FROM=ubuntu:20.04
 
-# TODO: add labels
-LABEL org.opencontainers.image.authors=""
-LABEL org.opencontainers.image.url=""
-LABEL org.opencontainers.image.documentation=""
-LABEL org.opencontainers.image.source=""
-LABEL org.opencontainers.image.vendor=""
-LABEL org.opencontainers.image.licenses=""
+FROM ${FROM} as builder
 
-COPY healthcheck.sh install.sh log4j_patch.sh /
-
-# install version (major.minor only); OMADA_URL set in install.sh
 ARG INSTALL_VER="5.6"
 
-# install omada controller (instructions taken from install.sh) & patch log4j, if applicable
+COPY scripts/omada/entrypoint.sh /
+COPY scripts/omada/healthcheck.sh \
+  scripts/omada/install.sh \
+  scripts/omada/log4j_patch.sh \
+  /
+
 RUN /install.sh \
   && /log4j_patch.sh \
   && rm /install.sh /log4j_patch.sh
 
-COPY entrypoint.sh /
+FROM ${FROM}
 
+LABEL org.opencontainers.image.authors="Schubert Anselme <schubert@anselm.es>"
+LABEL org.opencontainers.image.url="https://github.com/sanselme/images"
+LABEL org.opencontainers.image.documentation="https://github.com/sanselme/images"
+LABEL org.opencontainers.image.source="https://github.com/sanselme/images"
+LABEL org.opencontainers.image.vendor="Schubert Anselme"
+LABEL org.opencontainers.image.licenses="GPL-3.0-or-later"
+
+COPY --from=builder /opt/tplink/EAPController /opt/tplink/EAPController
 WORKDIR /opt/tplink/EAPController/lib
+
 EXPOSE 8088 8043 8843 29810/udp 29811 29812 29813 29814
-HEALTHCHECK --start-period=5m CMD /healthcheck.sh
 VOLUME ["/opt/tplink/EAPController/data","/opt/tplink/EAPController/logs"]
+
+HEALTHCHECK --start-period=5m CMD /healthcheck.sh
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/usr/bin/java","-server","-Xms128m","-Xmx1024m","-XX:MaxHeapFreeRatio=60","-XX:MinHeapFreeRatio=30","-XX:+HeapDumpOnOutOfMemoryError","-XX:HeapDumpPath=/opt/tplink/EAPController/logs/java_heapdump.hprof","-Djava.awt.headless=true","-cp","/opt/tplink/EAPController/lib/*::/opt/tplink/EAPController/properties:","com.tplink.smb.omada.starter.OmadaLinuxMain"]

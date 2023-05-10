@@ -1,4 +1,19 @@
-FROM ubuntu:22.04
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+ARG BASE_IMAGE=ubuntu:20.04
+
+FROM ${BASE_IMAGE}
 
 ARG COSIGN_VERSION=2.0.0
 ARG CRICTL_VERSION=1.26.0
@@ -17,11 +32,11 @@ LABEL org.opencontainers.image.licenses="GPL-3.0-or-later"
 ENV DEBCONF_NONINTERACTIVE_SEEN=true
 ENV DEBIAN_FRONTEND=noninteractive
 
-COPY ./kube/01-docker.sh /opt/docker.sh
-COPY ./kube/02-kubernetes.sh /opt/kubernetes.sh
+COPY scripts/docker.sh /opt/docker.sh
+COPY scripts/kubernetes.sh /opt/kubernetes.sh
 
-RUN apt update -y \
-  && apt install -y --no-install-recommends \
+RUN apt-get update -qq \
+  && apt-get install -y \
   bridge-utils \
   ca-certificates \
   ceph-common \
@@ -39,8 +54,7 @@ RUN apt update -y \
   make \
   nmap \
   patch \
-  python-heatclient \
-  python-openstackclient \
+  python3-openstackclient \
   python3-pip \
   rbd-nbd \
   socat \
@@ -84,11 +98,8 @@ RUN curl -fsSL https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/
   && mv vault /usr/local/bin/vault \
   && rm -f vault_${VAULT_VERSION}_linux_$(dpkg --print-architecture).zip
 
-RUN /opt/docker.sh \
-  && /opt/kubernetes.sh
-
 # Housekeeping
-RUN apt clean -y \
+RUN apt-get clean -y \
   && rm -rf \
   /var/cache/debconf/* \
   /var/lib/apt/lists/* \
