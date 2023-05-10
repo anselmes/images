@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Copyright (c) 2023 Schubert Anselme <schubert@anselm.es>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -14,8 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-=======
->>>>>>> 013aac0 (Update container image (#32))
 FROM ubuntu:20.04
 
 LABEL org.opencontainers.image.authors="airship-discuss@lists.airshipit.org, irc://#airshipit@freenode"
@@ -69,7 +66,6 @@ RUN apt-get -qq update \
 RUN mkdir -p /opt/maas/ && tar -cvzf /opt/maas/var-lib-maas.tgz /var/lib/maas
 
 # register ourselves with the region controller
-<<<<<<< HEAD
 COPY config/register-rack-controller.service /lib/systemd/system/register-rack-controller.service
 RUN systemctl enable register-rack-controller.service
 
@@ -80,18 +76,16 @@ COPY build/patch/maas-focal/secure_headers.patch /tmp/secure_headers.patch
 COPY build/patch/maas-focal/ipmi_error.patch /tmp/ipmi_error.patch
 # Patch to space redfish request retries apart a bit, to avoid overwhelming the BMC
 COPY build/patch/maas-focal/redfish_retries.patch /tmp/redfish_retries.patch
-=======
-COPY ../../../scripts/register-rack-controller.service /lib/systemd/system/register-rack-controller.service
+COPY config/register-rack-controller.service /lib/systemd/system/register-rack-controller.service
 RUN systemctl enable register-rack-controller.service
 
 # Patch so that Calico interfaces are ignored
-COPY nic_filter.patch /tmp/nic_filter.patch
-COPY secure_headers.patch /tmp/secure_headers.patch
+COPY build/patch/maas-focal/nic_filter.patch /tmp/nic_filter.patch
+COPY build/patch/maas-focal/secure_headers.patch /tmp/secure_headers.patch
 # Patch so maas knows that "BMC error" is retriable
-COPY ipmi_error.patch /tmp/ipmi_error.patch
+COPY build/patch/maas-focal/ipmi_error.patch /tmp/ipmi_error.patch
 # Patch to space redfish request retries apart a bit, to avoid overwhelming the BMC
-COPY redfish_retries.patch /tmp/redfish_retries.patch
->>>>>>> 013aac0 (Update container image (#32))
+COPY build/patch/maas-focal/redfish_retries.patch /tmp/redfish_retries.patch
 
 RUN cd /usr/lib/python3/dist-packages/provisioningserver/utils && patch network.py < /tmp/nic_filter.patch
 RUN cd /usr/lib/python3/dist-packages/twisted/web && patch server.py < /tmp/secure_headers.patch
@@ -99,11 +93,8 @@ RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch 
 RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch redfish.py < /tmp/redfish_retries.patch
 
 # echo journalctl logs to the container's stdout
-<<<<<<< HEAD
 COPY config/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
-=======
-COPY ../../../scripts/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
->>>>>>> 013aac0 (Update container image (#32))
+COPY config/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
 RUN systemctl enable journalctl-to-tty.service
 
 # quiet sudo for the maas user

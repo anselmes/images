@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 # Copyright (c) 2023 Schubert Anselme <schubert@anselm.es>
 #
-=======
->>>>>>> 013aac0 (Update container image (#32))
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -16,9 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-<<<<<<< HEAD
 ARG FROM=ubuntu:20.04
-=======
+
 # rebased/repackaged base image that only updates existing packages
 FROM ubuntu:20.04
 
@@ -29,25 +25,16 @@ LABEL org.opencontainers.image.documentation=""
 LABEL org.opencontainers.image.source=""
 LABEL org.opencontainers.image.vendor=""
 LABEL org.opencontainers.image.licenses=""
->>>>>>> 013aac0 (Update container image (#32))
 
 FROM ${FROM} as builder
 
 ARG INSTALL_VER="5.6"
 
-<<<<<<< HEAD
 COPY scripts/omada/entrypoint.sh /
 COPY scripts/omada/healthcheck.sh \
   scripts/omada/install.sh \
   scripts/omada/log4j_patch.sh \
   /
-=======
-# install omada controller (instructions taken from install.sh) & patch log4j, if applicable
-RUN /install.sh \
-  && /log4j_patch.sh \
-  && rm /install.sh /log4j_patch.sh
->>>>>>> 013aac0 (Update container image (#32))
-
 RUN /install.sh \
   && /log4j_patch.sh \
   && rm /install.sh /log4j_patch.sh
