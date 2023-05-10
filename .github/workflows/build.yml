@@ -22,7 +22,6 @@ env:
   # REGISTRY: docker.io/sanselme
   PLATFORMS: linux/amd64,linux/arm64
   BASE_IMAGE: ubuntu:20.04
-  TRIVY_IMAGE_DIGEST: d1796f197930d89590b1cbfbbda9f80ae6e878a1cb77dc652b198dba5c17dcdf
 
 jobs:
   build:
@@ -99,7 +98,7 @@ jobs:
             FROM=${{ env.BASE_IMAGE }}
       # FIXME: replace with aquasecurity/trivy-action@master when it supports multiple images
       - name: Run Trivy vulnerability scanner
-        uses: docker://ghcr.io/aquasecurity/trivy@sha256:${{ env.TRIVY_IMAGE_DIGEST }}
+        uses: docker://ghcr.io/aquasecurity/trivy@sha256:d1796f197930d89590b1cbfbbda9f80ae6e878a1cb77dc652b198dba5c17dcdf
         with:
           entrypoint: /bin/sh
           args: -c "trivy image --clear-cache; for img in ${{ env.found_images }}; do trivy image --exit-code 1 --severity CRITICAL --no-progress --format sarif --output trivy-results.sarif $img; done"
