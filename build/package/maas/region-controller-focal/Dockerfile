@@ -51,19 +51,19 @@ RUN apt-get -qq update \
 RUN mkdir -p /opt/maas/ && tar -cvzf /opt/maas/var-lib-maas.tgz /var/lib/maas
 
 # MAAS workarounds
-COPY route.patch /tmp/route.patch
-COPY kernel_package.patch /tmp/kernel_package.patch
-COPY bios_grub_partition.patch /tmp/bios_grub_partition.patch
+COPY build/patch/maas-focal/route.patch /tmp/route.patch
+COPY build/patch/maas-focal/kernel_package.patch /tmp/kernel_package.patch
+COPY build/patch/maas-focal/bios_grub_partition.patch /tmp/bios_grub_partition.patch
 # sh8121att: allow all requests via the proxy to allow it to work
 # behind ingress
-COPY proxy_acl.patch /tmp/proxy_acl.patch
+COPY build/patch/maas-focal/proxy_acl.patch /tmp/proxy_acl.patch
 # Patch to add retrying to MaaS BMC user setup, and improve exception handling
-COPY configure_ipmi_user.patch /tmp/configure_ipmi_user.patch
-COPY secure_headers.patch /tmp/secure_headers.patch
-COPY region_secret_rotate.patch /tmp/region_secret_rotate.patch
-COPY partitiontable_does_not_exist.patch /tmp/partitiontable_does_not_exist.patch
+COPY build/patch/maas-focal/configure_ipmi_user.patch /tmp/configure_ipmi_user.patch
+COPY build/patch/maas-focal/secure_headers.patch /tmp/secure_headers.patch
+COPY build/patch/maas-focal/region_secret_rotate.patch /tmp/region_secret_rotate.patch
+COPY build/patch/maas-focal/partitiontable_does_not_exist.patch /tmp/partitiontable_does_not_exist.patch
 # Allow tags with '/' symbols
-COPY regex_tags.patch /tmp/regex_tags.patch
+COPY build/patch/maas-focal/regex_tags.patch /tmp/regex_tags.patch
 
 RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed_network.py < /tmp/route.patch
 RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed.py < /tmp/kernel_package.patch
@@ -76,7 +76,7 @@ RUN cd /usr/lib/python3/dist-packages/maasserver/api && patch partitions.py < /t
 RUN cd /usr/lib/python3/dist-packages/maasserver/models && patch ownerdata.py < /tmp/regex_tags.patch
 
 # echo journalctl logs to the container's stdout
-COPY ../journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
+COPY config/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
 RUN systemctl enable journalctl-to-tty.service
 
 # quiet sudo for the maas user

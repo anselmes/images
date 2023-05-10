@@ -33,9 +33,9 @@ sudo apt install -y \
   docker-ce-cli \
   docker-compose-plugin
 
-# FIXME: Download & install cri-dockerd
-# curl -fsSLo /tmp/cri-dockerd.deb "https://github.com/Mirantis/cri-dockerd/releases/download/v${CRI_DOCKERD_VERSION_MAJ}/cri-dockerd_${CRI_DOCKERD_VERSION_MAJ}.${CRI_DOCKERD_VERSION_MIN}.ubuntu-focal_amd64.deb"
-# sudo apt install -y /tmp/cri-dockerd.deb
+# Download & install cri-dockerd
+curl -fsSLo /tmp/cri-dockerd.deb "https://github.com/Mirantis/cri-dockerd/releases/download/v${CRI_DOCKERD_VERSION_MAJ}/cri-dockerd_${CRI_DOCKERD_VERSION_MAJ}.${CRI_DOCKERD_VERSION_MIN}.ubuntu-focal_amd64.deb"
+sudo apt install -y /tmp/cri-dockerd.deb
 
 # Configure docker daemon
 docker_resolv="/etc/resolv.conf"
@@ -58,4 +58,4 @@ EOF
 
 sudo systemctl enable containerd.service
 sudo systemctl enable docker.service
-# sudo systemctl enable cri-docker.service
+sudo systemctl enable cri-docker.service

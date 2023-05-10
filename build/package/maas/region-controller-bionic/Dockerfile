@@ -50,19 +50,19 @@ RUN apt-get -qq update \
 RUN mkdir -p /opt/maas/ && tar -cvzf /opt/maas/var-lib-maas.tgz /var/lib/maas
 
 # MAAS workarounds
-COPY route.patch /tmp/route.patch
-COPY kernel_package.patch /tmp/kernel_package.patch
-COPY bios_grub_partition.patch /tmp/bios_grub_partition.patch
+COPY build/patch/maas-bionic/route.patch /tmp/route.patch
+COPY build/patch/maas-bionic/kernel_package.patch /tmp/kernel_package.patch
+COPY build/patch/maas-bionic/bios_grub_partition.patch /tmp/bios_grub_partition.patch
 # sh8121att: allow all requests via the proxy to allow it to work
 # behind ingress
-COPY proxy_acl.patch /tmp/proxy_acl.patch
+COPY build/patch/maas-bionic/proxy_acl.patch /tmp/proxy_acl.patch
 # Patch to add retrying to MaaS BMC user setup, and improve exception handling
-COPY configure_ipmi_user.patch /tmp/configure_ipmi_user.patch
-COPY secure_headers.patch /tmp/secure_headers.patch
-COPY region_secret_rotate.patch /tmp/region_secret_rotate.patch
-COPY partitiontable_does_not_exist.patch /tmp/partitiontable_does_not_exist.patch
+COPY build/patch/maas-bionic/configure_ipmi_user.patch /tmp/configure_ipmi_user.patch
+COPY build/patch/maas-bionic/secure_headers.patch /tmp/secure_headers.patch
+COPY build/patch/maas-bionic/region_secret_rotate.patch /tmp/region_secret_rotate.patch
+COPY build/patch/maas-bionic/partitiontable_does_not_exist.patch /tmp/partitiontable_does_not_exist.patch
 # Avoid enlistment failures due to exceptions during moonshot detect attempts
-COPY maas_ipmi_autodetect_tool.patch /tmp/maas_ipmi_autodetect_tool.patch
+COPY build/patch/maas-bionic/maas_ipmi_autodetect_tool.patch /tmp/maas_ipmi_autodetect_tool.patch
 
 RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed_network.py < /tmp/route.patch
 RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed.py < /tmp/kernel_package.patch
@@ -75,7 +75,7 @@ RUN cd /usr/lib/python3/dist-packages/maasserver/api && patch partitions.py < /t
 RUN cd /usr/lib/python3/dist-packages/metadataserver/user_data/templates/snippets/ && patch maas_ipmi_autodetect_tool.py < /tmp/maas_ipmi_autodetect_tool.patch
 
 # echo journalctl logs to the container's stdout
-COPY ../journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
+COPY config/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service
 RUN systemctl enable journalctl-to-tty.service
 
 # quiet sudo for the maas user
