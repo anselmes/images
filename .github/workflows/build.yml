@@ -9,6 +9,9 @@ on:
     paths:
       - build/package/*
       - build/package/**/*
+      - config/*
+      - scripts/*
+      - scripts/**/*
   pull_request:
     branches:
       - main
