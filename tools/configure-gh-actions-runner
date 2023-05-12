@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Copyright (c) 2023 Schubert Anselme <schubert@anselm.es>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -15,9 +17,9 @@
 
 set -e
 
-: "${RUNNER_OS:=linux}"
-: "${RUNNER_VERSION:=2.294.0}"
-: "${RUNNER_HASH_256:=11041376754f6beaccb56101a3e79bf5fc5d6ff628460fa1ae419f9f439e24a2}"
+RUNNER_OS="linux"
+RUNNER_VERSION="2.294.0"
+RUNNER_HASH_256="11041376754f6beaccb56101a3e79bf5fc5d6ff628460fa1ae419f9f439e24a2"
 
 ##
 ## Download
