@@ -9,15 +9,16 @@ on:
     paths:
       - build/package/*
       - build/package/**/*
-      - config/*
-      - scripts/*
-      - scripts/**/*
   pull_request:
     branches:
       - main
     paths:
       - build/package/*
       - build/package/**/*
+      - config/*
+      - scripts/*
+      - scripts/**/*
+  workflow_dispatch: {}
 
 env:
   REGISTRY: docker.io/sanselme
