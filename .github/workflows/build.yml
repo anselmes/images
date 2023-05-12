@@ -105,17 +105,19 @@ jobs:
       #   uses: github/codeql-action/upload-sarif@v2
       #   with:
       #     sarif_file: trivy-results.sarif
+      # FIXME: run if pull request
       - name: Sign the published Docker image
-        if: ${{ github.event_name != 'pull_request' }}
+        # if: ${{ github.event_name != 'pull_request' }}
         env:
           COSIGN_EXPERIMENTAL: "true"
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           TAGS: ${{ steps.meta.outputs.tags }}
         run: cosign sign --key env://COSIGN_PRIVATE_KEY ${TAGS}
+      # FIXME: run if pull request
       - name: Create GitHub SBOM
         uses: aquasecurity/trivy-action@master
-        if: ${{ github.event_name != 'pull_request' }}
+        # if: ${{ github.event_name != 'pull_request' }}
         with:
           scan-type: fs
           format: github
