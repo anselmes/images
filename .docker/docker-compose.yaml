@@ -1,0 +1,14 @@
+version: '3'
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/base:dev-ubuntu
+    init: true
+    entrypoint:
+      - sleep
+      - infinity
+    volumes:
+      - type: bind
+        source: ..
+        target: /workspace
+    env_file:
+      - ../.env

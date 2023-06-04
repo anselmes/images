@@ -2,6 +2,15 @@
 repo:
   - "*"
 
+# Add 'github-actions' label to any changes in the .github directory
+github-actions:
+  - .github/workflows/*
+  - .github/workflows/*/**
+  - .github/dependabot.yml
+  - .github/dependabot.yml/**
+  - build/package/action.yml
+  - build/package/actions/**
+
 # Add 'patch' label to any patch file changes
 patch:
   - "*.patch"
@@ -17,7 +26,7 @@ scripts:
   - scripts/*/**
   - scripts/**/*
 
-# Add 'tooling' label to changes within tools
-tooling:
+# Add 'tools' label to changes within tools
+tools:
   - tools/*
   - tools/*/**

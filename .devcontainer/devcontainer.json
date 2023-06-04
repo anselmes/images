@@ -1,0 +1,83 @@
+{
+  "name": "images",
+  "dockerComposeFile": ["${localWorkspaceFolder}/.docker/docker-compose.yaml"],
+  "service": "devcontainer",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": true,
+      "installOhMyZsh": true,
+      "upgradePackages": true,
+      "nonFreePackages": true
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": true,
+      "azureDnsAutoDetection": true,
+      "installDockerBuildx": true
+    },
+    "ghcr.io/devcontainers-contrib/features/act:1": {},
+    "ghcr.io/devcontainers-contrib/features/actionlint:1": {},
+    "ghcr.io/devcontainers-contrib/features/actions-runner:1": {},
+    "ghcr.io/devcontainers-contrib/features/age:1": {},
+    "ghcr.io/devcontainers-contrib/features/cloudflared:1": {},
+    "ghcr.io/devcontainers-contrib/features/cosign:1": {},
+    "ghcr.io/devcontainers-contrib/features/curl-apt-get:1": {},
+    "ghcr.io/devcontainers-contrib/features/direnv-asdf:2": {},
+    "ghcr.io/devcontainers-contrib/features/jfrog-cli:1": {},
+    "ghcr.io/devcontainers-contrib/features/kind:1": {},
+    "ghcr.io/devcontainers-contrib/features/kyverno-cli:1": {},
+    "ghcr.io/devcontainers-contrib/features/opa:1": {},
+    "ghcr.io/devcontainers-contrib/features/sops:1": {},
+    "ghcr.io/devcontainers-contrib/features/vault-asdf:2": {},
+    "ghcr.io/devcontainers-contrib/features/yamllint:2": {},
+    "ghcr.io/devcontainers/features/git-lfs:1": {},
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {},
+    "ghcr.io/dhoeric/features/hadolint:1": {},
+    "ghcr.io/dhoeric/features/trivy:1": {},
+    "ghcr.io/eitsupi/devcontainer-features/jq-likes:1": {},
+    "ghcr.io/flexwie/devcontainer-features/op:1": {},
+    "ghcr.io/jsburckhardt/devcontainer-features/flux:1": {},
+    "ghcr.io/lentzi90/features/clusterctl:0": {},
+    "ghcr.io/lukewiwa/features/shellcheck:0": {},
+    "ghcr.io/rio/features/kustomize:1": {},
+    "ghcr.io/trunk-io/devcontainer-feature/trunk:1": {}
+  },
+  "forwardPorts": [ 6443, 8080, 8443 ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "aaron-bond.better-comments",
+        "christian-kohler.path-intellisense",
+        "codezombiech.gitignore",
+        "cschlosser.doxdocgen",
+        "DavidAnson.vscode-markdownlint",
+        "eamodio.gitlens",
+        "EditorConfig.EditorConfig",
+        "epivision.vscode-file-header",
+        "esbenp.prettier-vscode",
+        "exiasr.hadolint",
+        "fnando.linter",
+        "GitHub.codespaces",
+        "GitHub.copilot-nightly",
+        "GitHub.vscode-codeql",
+        "github.vscode-github-actions",
+        "GitHub.vscode-pull-request-github",
+        "jerrygoyal.shortcut-menu-bar",
+        "mikestead.dotenv",
+        "minherz.copyright-inserter",
+        "mkhl.shfmt",
+        "ms-azuretools.vscode-docker",
+        "ms-kubernetes-tools.kind-vscode",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "patbenatar.advanced-new-file",
+        "redhat.vscode-yaml",
+        "VisualStudioExptTeam.vscodeintellicode",
+        "vscode-icons-team.vscode-icons",
+        "wayou.vscode-todo-highlight"
+      ]
+    }
+  }
+}
