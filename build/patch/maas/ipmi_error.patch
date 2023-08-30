@@ -1,5 +1,5 @@
 diff --git a/src/provisioningserver/drivers/power/ipmi.py b/src/provisioningserver/drivers/power/ipmi.py
-index 09f3295..2971bd2 100644
+index 09f3295..c17213b 100644
 --- a/src/provisioningserver/drivers/power/ipmi.py
 +++ b/src/provisioningserver/drivers/power/ipmi.py
 @@ -155,6 +155,13 @@ IPMI_ERRORS = {

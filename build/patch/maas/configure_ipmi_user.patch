@@ -1,7 +1,7 @@
-diff --git a/src/metadataserver/builtin_scripts/commissioning_scripts/bmc_config.py b/src/metadataserver/builtin_scripts/commissioning_scripts/bmc_config.py
-index 4964f08..8210fc3 100755
---- a/src/metadataserver/builtin_scripts/commissioning_scripts/bmc_config.py
-+++ b/src/metadataserver/builtin_scripts/commissioning_scripts/bmc_config.py
+diff --git a/usr/lib/python3/dist-packages//metadataserver/builtin_scripts/commissioning_scripts/bmc_config.py b/bmc_config.py
+index 02e900d..ffee0f6 100755
+--- a/usr/lib/python3/dist-packages//metadataserver/builtin_scripts/commissioning_scripts/bmc_config.py
++++ b/bmc_config.py
 @@ -184,6 +184,29 @@ class IPMIBase(BMCConfig):
          return first_unused
 

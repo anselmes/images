@@ -18,14 +18,6 @@ ARG FROM=ubuntu:20.04
 # rebased/repackaged base image that only updates existing packages
 FROM ubuntu:20.04
 
-# TODO: add labels
-LABEL org.opencontainers.image.authors=""
-LABEL org.opencontainers.image.url=""
-LABEL org.opencontainers.image.documentation=""
-LABEL org.opencontainers.image.source=""
-LABEL org.opencontainers.image.vendor=""
-LABEL org.opencontainers.image.licenses=""
-
 FROM ${FROM} as builder
 
 ARG INSTALL_VER="5.6"
@@ -40,13 +32,6 @@ RUN /install.sh \
   && rm /install.sh /log4j_patch.sh
 
 FROM ${FROM}
-
-LABEL org.opencontainers.image.authors="Schubert Anselme <schubert@anselm.es>"
-LABEL org.opencontainers.image.url="https://github.com/sanselme/images"
-LABEL org.opencontainers.image.documentation="https://github.com/sanselme/images"
-LABEL org.opencontainers.image.source="https://github.com/sanselme/images"
-LABEL org.opencontainers.image.vendor="Schubert Anselme"
-LABEL org.opencontainers.image.licenses="GPL-3.0-or-later"
 
 COPY --from=builder /opt/tplink/EAPController /opt/tplink/EAPController
 WORKDIR /opt/tplink/EAPController/lib
