@@ -34,13 +34,6 @@ RUN make get-modules \
 
 FROM ${BASE_IMAGE}
 
-LABEL org.opencontainers.image.authors="Schubert Anselme <schubert@anselm.es>"
-LABEL org.opencontainers.image.url="https://github.com/sanselme/images"
-LABEL org.opencontainers.image.documentation="https://github.com/sanselme/images"
-LABEL org.opencontainers.image.source="https://github.com/sanselme/images"
-LABEL org.opencontainers.image.vendor="Schubert Anselme"
-LABEL org.opencontainers.image.licenses="GPL-3.0-or-later"
-
 COPY --from=builder \
   /kubernetes-entrypoint/bin/kubernetes-entrypoint \
   /usr/local/bin/kubernetes-entrypoint

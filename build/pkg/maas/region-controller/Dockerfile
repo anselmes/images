@@ -12,15 +12,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
-
 FROM ubuntu:22.04
-
-LABEL org.opencontainers.image.authors="airship-discuss@lists.airshipit.org, irc://#airshipit@freenode"
-LABEL org.opencontainers.image.url="https://airshipit.org"
-LABEL org.opencontainers.image.documentation="https://github.com/openstack/airship-maas"
-LABEL org.opencontainers.image.source="https://git.openstack.org/openstack/airship-maas"
-LABEL org.opencontainers.image.vendor="The Airship Authors"
-LABEL org.opencontainers.image.licenses="Apache-2.0"
 
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
@@ -32,25 +24,20 @@ ARG no_proxy
 ENV DEBIAN_FRONTEND noninteractive
 ENV container docker
 
-ENV MAAS_VERSION 1:3.3.1-13169-g.94920eb1e-0ubuntu1~22.04.1
-
-# Remove systemd-timesyncd, which conflicts with chrony
-RUN apt-get remove -y --purge systemd-timesyncd
+ENV MAAS_VERSION 1:3.3.4-13189-g.f88272d1e-0ubuntu1~22.04.1
 
 RUN apt-get -qq update \
  && apt-get install -y \
         avahi-daemon \
-        isc-dhcp-server \
         jq \
-        libvirt-clients \
-        libvirt-daemon-system\
         patch \
         software-properties-common \
         sudo \
         systemd \
+        cron \
         ca-certificates \
-# Don"t start any optional services except for the few we need.
-# (specifically, don"t start avahi-daemon, isc-dhcp-server, or libvirtd)
+# Don't start any optional services except for the few we need.
+# (specifically, don't start avahi-daemon)
  && find /etc/systemd/system \
          /lib/systemd/system \
          -path '*.wants/*' \
@@ -62,28 +49,39 @@ RUN apt-get -qq update \
 # Install maas from the ppa
  && add-apt-repository -yu ppa:maas/3.3 \
  && apt-get install -y \
-        maas-rack-controller=$MAAS_VERSION \
+        maas-region-api=$MAAS_VERSION \
+        # tcpdump is required by /usr/lib/maas/beacon-monitor
+        tcpdump \
  && rm -rf /var/lib/apt/lists/*
 
 # Preserve the directory structure, permissions, and contents of /var/lib/maas
 RUN mkdir -p /opt/maas/ && tar -cvzf /opt/maas/var-lib-maas.tgz /var/lib/maas
 
-# register ourselves with the region controller
-COPY config/register-rack-controller.service /lib/systemd/system/register-rack-controller.service
-RUN systemctl enable register-rack-controller.service
-
-# Patch so that Calico interfaces are ignored
-COPY build/patch/maas/nic_filter.patch /tmp/nic_filter.patch
+# MAAS workarounds
+COPY build/patch/maas/route.patch /tmp/route.patch
+COPY build/patch/maas/kernel_package.patch /tmp/kernel_package.patch
+COPY build/patch/maas/bios_grub_partition.patch /tmp/bios_grub_partition.patch
+# sh8121att: allow all requests via the proxy to allow it to work
+# behind ingress
+COPY build/patch/maas/proxy_acl.patch /tmp/proxy_acl.patch
+# Patch to add retrying to MaaS BMC user setup, and improve exception handling
+COPY build/patch/maas/configure_ipmi_user.patch /tmp/configure_ipmi_user.patch
 COPY build/patch/maas/secure_headers.patch /tmp/secure_headers.patch
-# Patch so maas knows that "BMC error" is retriable
-COPY build/patch/maas/ipmi_error.patch /tmp/ipmi_error.patch
-# Patch to space redfish request retries apart a bit, to avoid overwhelming the BMC
-COPY build/patch/maas/redfish_retries.patch /tmp/redfish_retries.patch
+COPY build/patch/maas/partitiontable_does_not_exist.patch /tmp/partitiontable_does_not_exist.patch
+# Allow tags with '/' symbols
+COPY build/patch/maas/regex_tags.patch /tmp/regex_tags.patch
+# Patch to allow any recursion and cache queries
+COPY build/patch/maas/allow_query.patch /tmp/allow_query.patch
 
-RUN cd /usr/lib/python3/dist-packages/provisioningserver/utils && patch network.py < /tmp/nic_filter.patch
+RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed_network.py < /tmp/route.patch
+RUN cd /usr/lib/python3/dist-packages/maasserver && patch preseed.py < /tmp/kernel_package.patch
+RUN cd /usr/lib/python3/dist-packages/maasserver/models && patch partition.py < /tmp/bios_grub_partition.patch
+RUN cd /usr/lib/python3/dist-packages/metadataserver/builtin_scripts/commissioning_scripts && patch bmc_config.py < /tmp/configure_ipmi_user.patch
+RUN cd /usr/lib/python3/dist-packages/provisioningserver/templates/proxy && patch maas-proxy.conf.template < /tmp/proxy_acl.patch
 RUN cd /usr/lib/python3/dist-packages/twisted/web && patch server.py < /tmp/secure_headers.patch
-RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch ipmi.py < /tmp/ipmi_error.patch
-RUN cd /usr/lib/python3/dist-packages/provisioningserver/drivers/power && patch redfish.py < /tmp/redfish_retries.patch
+RUN cd /usr/lib/python3/dist-packages/maasserver/api && patch partitions.py < /tmp/partitiontable_does_not_exist.patch
+RUN cd /usr/lib/python3/dist-packages/maasserver/models && patch ownerdata.py < /tmp/regex_tags.patch
+RUN cd /usr/lib/python3/dist-packages/provisioningserver/templates/dns && patch named.conf.options.inside.maas.template < /tmp/allow_query.patch
 
 # echo journalctl logs to the container's stdout
 COPY config/journalctl-to-tty.service /etc/systemd/system/journalctl-to-tty.service

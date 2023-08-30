@@ -1,5 +1,5 @@
 diff --git a/src/maasserver/api/partitions.py b/src/maasserver/api/partitions.py
-index 5a413fb3b..6a5ad8b47 100644
+index dd1b431..235c03f 100644
 --- a/src/maasserver/api/partitions.py
 +++ b/src/maasserver/api/partitions.py
 @@ -99,7 +99,7 @@ class PartitionsHandler(OperationsHandler):

@@ -1,5 +1,5 @@
 diff --git a/src/maasserver/models/ownerdata.py b/src/maasserver/models/ownerdata.py
-index 2cbaa9d..f8cbeb5 100644
+index 2cbaa9d..14eeb69 100644
 --- a/src/maasserver/models/ownerdata.py
 +++ b/src/maasserver/models/ownerdata.py
 @@ -17,7 +17,7 @@ from django.db.models import (

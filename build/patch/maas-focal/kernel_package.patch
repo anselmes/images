@@ -1,5 +1,5 @@
 diff --git a/src/maasserver/preseed.py b/src/maasserver/preseed.py
-index c692969..5b63327 100644
+index c692969..c20facf 100644
 --- a/src/maasserver/preseed.py
 +++ b/src/maasserver/preseed.py
 @@ -250,7 +250,26 @@ def compose_curtin_kernel_preseed(node):
@@ -9,7 +9,7 @@ index c692969..5b63327 100644
 +    # previous logic to retrieve kpackage parameter
      kpackage = BootResource.objects.get_kpackage_for_node(node)
 +
-+    # determine if this node has kernel parameters applied by drydock
++    # determine if thie node has kernel parameters applied by drydock
 +    # and override kpackage if we discover the right properties
 +    kernel_opt_tag = "%s_kp" % (node.hostname)
 +    if kernel_opt_tag in node.tag_names():

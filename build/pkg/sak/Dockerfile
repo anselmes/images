@@ -25,13 +25,6 @@ ARG SOPS_VERSION=3.7.3
 ARG VAULT_VERSION=1.13.1
 ARG YQ_VERSION=4.6.0
 
-LABEL org.opencontainers.image.authors="Schubert Anselme <schubert@anselm.es>"
-LABEL org.opencontainers.image.url="https://github.com/sanselme/images"
-LABEL org.opencontainers.image.documentation="https://github.com/sanselme/images"
-LABEL org.opencontainers.image.source="https://github.com/sanselme/images"
-LABEL org.opencontainers.image.vendor="Schubert Anselme"
-LABEL org.opencontainers.image.licenses="GPL-3.0-or-later"
-
 ENV DEBCONF_NONINTERACTIVE_SEEN=true
 ENV DEBIAN_FRONTEND=noninteractive
 
