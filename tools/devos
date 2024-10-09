@@ -1,0 +1,251 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0
+
+set -eo pipefail
+
+# Check Dependencies
+commands=()
+
+for command in "${commands[@]}"; do
+  if [[ $(command -v "${command}" > /dev/null) ]]; then
+    echo "${command} not found"
+    exit 1
+  fi
+done
+
+ARGS=${@}
+DIR="$(dirname $(realpath $(dirname $0)))"
+
+NAME="devos"
+ARCH="$(uname -m)"
+VERSION="noble"
+IMG="/var/lib/libvirt/images/${VERSION}.img"
+VOL="/var/lib/libvirt/images/${NAME}.img"
+
+run_multipass() {
+  commands=("multipass")
+  for command in "${commands[@]}"; do
+    if [[ $(command -v "${command}" > /dev/null) ]]; then
+      echo "${command} not found"
+      exit 1
+    fi
+  done
+
+  [[ ${CLEANUP} == true ]] && cleanup multipass
+
+  # generate config
+  genconfig
+  yq '.write_files = ["/run/install-docker.sh",
+    "/run/init-devos.sh",
+    "/run/config-devos.sh"] |
+    .runcmd = ["/run/install-docker.sh",
+    "/var/run/init-devos.sh",
+    "/var/run/config-devos.sh"]' /tmp/userdata
+
+  # launch instance
+  if grep -q "${NAME}" <(multipass ls); then
+    multipass info "${NAME}"
+  elif grep -q Running <(multipass info "${NAME}" --format yaml | yq ".\"${NAME}\"[].state"); then
+    multipass start "${NAME}"
+    multipass info "${NAME}"
+  else
+    multipass launch lts -n "${NAME}" -c 4 -m 16g -d 64g --cloud-init /tmp/userdata
+    multipass info "${NAME}"
+  fi
+
+  # check directory is mounted
+  if [[ ${MOUNT} == true ]]; then
+    grep -q "${DEST}" <(multipass info ${NAME} --format yaml | yq ".\"${NAME}\"[].mounts") ||
+      multipass mount "${DIR}" "${NAME}:${DEST}"
+  fi
+}
+
+run_libvirt() {
+  commands=(
+    "pip"
+    "python3"
+  )
+  for command in "${commands[@]}"; do
+    if [[ $(command -v "${command}" > /dev/null) ]]; then
+      echo "${command} not found"
+      exit 1
+    fi
+  done
+
+  [[ ${CLEANUP} == true ]] && cleanup libvirt
+
+  # download image
+  if [[ ! -f "${IMG}" ]]; then
+    curl -fsSLo "${IMG}" "http://cloud-images.ubuntu.com/${VERSION}/current/${VERSION}-server-cloudimg-${ARCH}.img"
+    qemu-img info "${IMG}"
+  fi
+
+  # create volume
+  if [[ ! -f "${VOL}" ]]; then
+    qemu-img create -b "${IMG}" -f qcow2 -F qcow2 "${VOL}" 16G
+    qemu-img info "${VOL}"
+  fi
+
+  # generate config
+  genconfig
+  geniso
+
+  # fixme: launch instance
+  grep -q "${NAME}" <(virsh list --all) || virt-install \
+    --name ${NAME} \
+    --os-variant ubuntu20.04 \
+    --memory 2048 \
+    --network none \
+    --vcpus 2 \
+    --disk path=${VOL},format=qcow2 \
+    --disk path=/tmp/${NAME}-cidata.iso,device=cdrom \
+    --import \
+    --noautoconsole
+  virsh list --all
+
+  [[ -n $(command -v vbmc) ]] && VBMC=true
+
+  # configure vbmc
+  if [[ ${VBMC} == true ]]; then
+    grep -q devos <(vbmc list) || vbmc add "${NAME}"
+    vbmc list
+  fi
+}
+
+genconfig() {
+    # create metadata
+  cat <<eof > "${1:-/tmp/metadata}"
+instance-id: ${NAME}
+local-hostname: ${NAME}
+eof
+
+  # create userdata
+  cat <<eof > "${2:-/tmp/userdata}"
+#cloud-config
+users:
+  - name: ${NAME}
+    groups: sudo
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys: "${SSHKEY}"
+eof
+}
+
+geniso() {
+  ISOCMD="genisoimage"
+  if [[ -z $(command -v ${ISOCMD}) ]]; then
+    ISOCMD="mkisofs"
+    if [[ -z $(command -v ${ISOCMD}) ]]; then
+      echo "genisoimage nor mkisofs found"
+      exit 1
+    fi
+  fi
+
+  # create iso
+  ${ISOCMD} \
+    -joliet \
+    -rock \
+    -output /tmp/${NAME}-cidata.iso \
+    -volid cidata \
+    "${1:-/tmp/userdata}" \
+    "${2:-/tmp/metadata}"
+}
+
+cleanup() {
+  case "${1}" in
+    multipass)
+      multipass delete --purge "${NAME}"
+      ;;
+    libvirt)
+      [[ ${VBMC} == true ]] && vbmc delete "${NAME}"
+      virsh destroy "${NAME}" || true
+      virsh undefine --nvram "${NAME}" || true
+      rm -f "/tmp/${NAME}-cidata.iso"
+      rm -f "/tmp/metadata"
+      rm -f "/tmp/userdata"
+      rm -f "${VOL}"
+      virsh list --all
+      [[ ${VBMC} == true ]] && vbmc list
+      ;;
+    *)
+      echo "invalid option"
+      exit 1
+  esac
+  exit 0
+}
+
+help() {
+  echo """
+Usage: ${0} [options] [command]
+
+Options:
+  --name <name>     Set the name of the project
+  --sshkey <path>   Set the path to the SSH key
+  --mount           Mount the project
+  --cleanup         Cleanup the project
+  -d, --debug       Enable debug mode
+  -v, --version     Show version
+  -h, --help        Show help
+
+Commands:
+  mp                Manage multipass instances
+  lv                Manage libvirt instances
+"""
+}
+
+# Parse Arguments
+while [[ $# -gt 0 ]]; do
+  case "${1}" in
+    --name)
+      NAME="${2}"
+      [[ -z ${NAME} ]] && echo "Name is required" && exit 1
+      shift 2
+      ;;
+    --mount)
+      MOUNT=true
+      shift
+      ;;
+    --cleanup)
+      CLEANUP=true
+      shift
+      ;;
+    -d|--debug)
+      DEBUG=true
+      shift
+      ;;
+    -v|--version|version)
+      echo "${0} $(git describe --all)"
+      exit 0
+      ;;
+    -h|--help|help)
+      help
+      exit 0
+      ;;
+    *)
+      CMD=${1}
+      ARGS=${@:2}
+      echo "cmd: ${CMD}"
+      echo "args: ${ARGS}"
+      shift
+      ;;
+  esac
+done
+
+# Enable Debug Mode
+if [[ ${DEBUG} == true ]]; then
+  set -x
+fi
+
+echo "cleanup: ${CLEANUP}"
+case "${CMD}" in
+  mp)
+    run_multipass
+    ;;
+  lv)
+    run_libvirt
+    ;;
+  *)
+    [[ -n ${CMD} ]] && echo "Command not found" && help && exit 1
+    help && exit 0
+    ;;
+esac

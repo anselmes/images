@@ -1,0 +1,23 @@
+---
+services:
+  images:
+    image: ghcr.io/anselmes/devcontainer:main
+    privileged: true
+    stdin_open: true
+    tty: true
+    user: root # note: required for /sbin/init
+    working_dir: /home/devcontainer/workspace
+    # env_file:
+    #   - .env
+    volumes:
+      - .:/home/devcontainer/workspace
+      - ~/.gitconfig:/home/devcontainer/.gitconfig:ro
+      - ~/.gnupg:/home/devcontainer/.gnupg:ro
+      - ~/.ssh:/home/devcontainer/.ssh:ro
+      - ~/.zshrc:/home/devcontainer/.zshrc:ro
+    ports:
+      - 10022:22
+      - 10080:80
+      - 10443:443
+      - 15900:5900
+      - 16443:6443

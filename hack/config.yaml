@@ -1,0 +1,70 @@
+---
+apiVersion: k0s.k0sproject.io/v1beta1
+kind: Cluster
+metadata:
+  name: devos
+spec:
+  api:
+    sans:
+      - kubernetes.devos.local
+  network:
+    provider: custom
+  featureGates:
+    - name: UserNamespacesSupport
+      enabled: true
+  extensions:
+    helm:
+      charts:
+        - name: cilium
+          chartname: cilium/cilium
+          namespace: kube-system
+          order: 1
+          version: 1.16.2
+          values: |
+            l2announcements:
+              enabled: true
+            gatewayAPI:
+              enabled: true
+            operator:
+              replicas: 1
+            kubeProxyReplacement: true
+        - name: openebs
+          chartname: openebs/openebs
+          namespace: kube-system
+          order: 1
+          version: 3.10.0
+          values: |
+            analytics:
+              enabled: false
+            localprovisioner:
+              hostpathClass:
+                isDefaultClass: true
+        - name: cert-manager
+          chartname: jetstack/cert-manager
+          namespace: cert-manager
+          order: 2
+          version: v1.16.0
+          values: |
+            crds:
+              enabled: true
+        - name: flux
+          chartname: oci://registry-1.docker.io/bitnamicharts/flux
+          namespace: cicd
+          order: 3
+          version: 2.3.20
+          values: |
+            global:
+              storageClass: openebs-hostpath
+              persistence:
+                enabled: true
+      repositories:
+        - name: cilium
+          url: https://helm.cilium.io/
+        - name: grafana
+          url: https://grafana.github.io/helm-charts/
+        - name: jetstack
+          url: https://charts.jetstack.io/
+        - name: openebs
+          url: https://openebs.github.io/charts/
+  telemetry:
+    enabled: false
