@@ -16,6 +16,7 @@ jobs:
       issues: write
       pull-requests: write
       repository-projects: write
+
   trivy:
     uses: anselmes/cicd/.github/workflows/trivy.yml@main # main https://github.com/anselmes/cicd/commit/main
     permissions:
@@ -50,5 +51,6 @@ jobs:
       repository-projects: read
       security-events: write
       statuses: read
+
   # sonarqube:
   #   uses: anselmes/cicd/.github/workflows/sonarqube.yml@main # main https://github.com/anselmes/cicd/commit/main

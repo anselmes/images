@@ -29,7 +29,7 @@ groups=(
 )
 
 for g in "${groups[@]}"; do
-  sudo usermod -aG "${g}" "${USER}" || true
+  sudo usermod -aG "${g}" "$(whoami)" || true
 done
 
 # configure environment
@@ -47,4 +47,4 @@ ln -sf "${DIR}/config/zshrc" "${HOME}/.zshrc" || true
 sudo ln -sf "${DIR}/scripts/aliases.sh" /etc/profile.d/aliases.sh
 sudo ln -sf "${DIR}/scripts/environment.sh" /etc/profile.d/environment.sh
 
-sudo chsh -s "$(command -v zsh)" "${USER}"
+sudo chsh -s "$(command -v zsh)" "$(whoami)"
