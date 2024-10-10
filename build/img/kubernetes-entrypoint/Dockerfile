@@ -3,7 +3,7 @@
 ARG BUILD_IMAGE=golang:1.22-alpine
 ARG BASE_IMAGE=ubuntu:24.04
 
-FROM ${BUILD_IMAGE} as builder
+FROM ${BUILD_IMAGE} AS builder
 ARG MAKE_TARGET=build
 ENV GO111MODULE=on
 RUN apk add --no-cache \
