@@ -21,10 +21,11 @@ k0sctl apply --config /tmp/cl.yaml
 k0sctl kubeconfig --config /tmp/cl.yaml > "${KUBECONFIG}"
 
 # apply crds
-grep -q gateway <(kubectl get crd) ||
-  kustomize build https://github.com/kubernetes-sigs/gateway-api/config/crd/experimental | kubectl apply -f -
-grep -q snapshot <(kubectl get crd) ||
-  kustomize build https://github.com/kubernetes-csi/external-snapshotter/client/config/crd | kubectl apply -f -
+kustomize build "${DIR}" | kubectl apply -f -
+# grep -q gateway <(kubectl get crd) ||
+#   kustomize build https://github.com/kubernetes-sigs/gateway-api/config/crd/experimental | kubectl apply -f -
+# grep -q snapshot <(kubectl get crd) ||
+#   kustomize build https://github.com/kubernetes-csi/external-snapshotter/client/config/crd | kubectl apply -f -
 
 # apply manifests
 while [[ -z $(helm ls -n cicd | grep flux) ]]; do

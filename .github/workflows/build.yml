@@ -13,19 +13,19 @@ concurrency:
 permissions: read-all
 
 jobs:
+  # todo: separate build and push
   container:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false #${{ github.ref == 'refs/heads/main' }}
+      fail-fast: ${{ github.ref == 'refs/heads/main' }}
       matrix:
         container:
           - name: devcontainer
             repo: ghcr.io
-            platform: linux/amd64,linux/arm64
-          - name: kubernetes-entrypoint
             platform: linux/amd64,linux/arm64,linux/riscv64
+          - name: kubernetes-entrypoint
             repo: docker.io
-            path: sanselme
+            platform: linux/amd64,linux/arm64,linux/riscv64
     permissions:
       contents: read
       pages: write
@@ -36,8 +36,9 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
       - name: Build Container (ghcr.io)
-        uses: anselmes/cicd/.github/actions/build@update-gha # fixme: update-gha https://github.com/anselmes/cicd/commit/update-gha
+        uses: anselmes/cicd/.github/actions/build@22d22b93879f0cbdf1c112b343e24466c9cb3058 # main https://github.com/anselmes/cicd/commit/22d22b93879f0cbdf1c112b343e24466c9cb3058
         if: ${{ matrix.container.repo == 'ghcr.io' }}
         with:
           build-container-image: true
@@ -58,8 +59,9 @@ jobs:
           container-image-labels: |
             org.opencontainers.image.title=${{ matrix.container.name }}
             org.opencontainers.image.description=${{ matrix.container.description || matrix.container.name }}
+
       - name: Build Container (docker.io)
-        uses: anselmes/cicd/.github/actions/build@update-gha # fixme: update-gha https://github.com/anselmes/cicd/commit/update-gha
+        uses: anselmes/cicd/.github/actions/build@22d22b93879f0cbdf1c112b343e24466c9cb3058 # main https://github.com/anselmes/cicd/commit/22d22b93879f0cbdf1c112b343e24466c9cb3058
         if: ${{ matrix.container.repo == 'docker.io' }}
         with:
           build-container-image: true

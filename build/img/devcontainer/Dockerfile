@@ -24,9 +24,9 @@ RUN apt-get update -y && \
 
 COPY config/systemd/journal-to-tty.service /lib/systemd/system/journal-to-tty.service
 COPY build/img/devcontainer/devcontainer /etc/sudoers.d/devcontainer
-# todo: checksum downloaded binaries
 COPY scripts/*.sh /tmp/scripts/
 
+# todo: checksum downloaded binaries
 RUN chmod +x /tmp/scripts/*.sh && \
   /tmp/scripts/init-devos.sh && \
   systemctl enable journal-to-tty.service && \
