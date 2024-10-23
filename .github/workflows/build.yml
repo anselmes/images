@@ -20,12 +20,20 @@ jobs:
       matrix:
         container:
           - name: devcontainer
-            repo: ghcr.io
             platform: linux/amd64,linux/arm64
+            repo: ghcr.io
           - name: kubernetes-entrypoint
             platform: linux/amd64,linux/arm64,linux/riscv64
             repo: docker.io
             path: sanselme
+          # - name: vyos
+          #   platform: linux/amd64,linux/arm64
+          #   repo: docker.io
+          #   path: sanselme
+          #   tags: 1.5
+          #   args:
+          #     BUILD_DATE: ${{ github.run_number }}
+          #     VYOS_VERSION: 1.5
     permissions:
       contents: read
       pages: write
@@ -37,7 +45,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Build Container (ghcr.io)
-        uses: anselmes/cicd/.github/actions/build@update-gha # fixme: update-gha https://github.com/anselmes/cicd/commit/update-gha
+        uses: anselmes/cicd/.github/actions/build@main # fixme: main https://github.com/anselmes/cicd/commit/main
         if: ${{ matrix.container.repo == 'ghcr.io' }}
         with:
           build-container-image: true
@@ -59,7 +67,7 @@ jobs:
             org.opencontainers.image.title=${{ matrix.container.name }}
             org.opencontainers.image.description=${{ matrix.container.description || matrix.container.name }}
       - name: Build Container (docker.io)
-        uses: anselmes/cicd/.github/actions/build@update-gha # fixme: update-gha https://github.com/anselmes/cicd/commit/update-gha
+        uses: anselmes/cicd/.github/actions/build@main # fixme: main https://github.com/anselmes/cicd/commit/main
         if: ${{ matrix.container.repo == 'docker.io' }}
         with:
           build-container-image: true

@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0
 
-FROM ubuntu:24.04
+ARG BASE_IMAGE=ubuntu:24.04
+
+FROM ${BASE_IMAGE}
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV X11VNC_SKIP_DISPLAY==""
+ENV X11VNC_SKIP_DISPLAY=""
 
 RUN apt-get update -y && \
   apt-get install --no-install-recommends -y \
