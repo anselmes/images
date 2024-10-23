@@ -11,7 +11,7 @@ RUN apk add --no-cache \
   build-base \
   git \
   make \
-  && git clone --depth=1 https://github.com/airshipit/kubernetes-entrypoint.git /kubernetes-entrypoint
+  && git clone --single-branch --depth=1 https://github.com/airshipit/kubernetes-entrypoint.git /kubernetes-entrypoint
 WORKDIR /kubernetes-entrypoint
 RUN make get-modules \
   && make ${MAKE_TARGET}
@@ -29,6 +29,6 @@ RUN apt-get update -qq \
   /var/cache/debconf/* \
   /var/lib/apt/lists/*
 
-USER 65534
 ENTRYPOINT [ "/usr/local/bin/kubernetes-entrypoint" ]
+USER 65534
 HEALTHCHECK NONE

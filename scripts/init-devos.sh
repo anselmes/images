@@ -85,7 +85,7 @@ fi
 
 # install jq
 if [[ -z $(command -v jq) ]]; then
-  curl -fsSLo /tmp/jq "https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-arm64"
+  curl -fsSLo /tmp/jq "https://github.com/jqlang/jq/releases/download/jq-${JQ_VERSION}/jq-linux-${ARCH}"
   install /tmp/jq /usr/local/bin/
 fi
 
