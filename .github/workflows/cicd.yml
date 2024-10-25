@@ -17,7 +17,7 @@ jobs:
       pull-requests: write
       repository-projects: write
   trivy:
-    uses: anselmes/cicd/.github/workflows/trivy.yml@update-gha # fixme: update-gha https://github.com/anselmes/cicd/commit/update-gha
+    uses: anselmes/cicd/.github/workflows/trivy.yml@main # fixme: main https://github.com/anselmes/cicd/commit/main
     permissions:
       contents: write
       id-token: write
