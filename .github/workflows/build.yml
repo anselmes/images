@@ -37,7 +37,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Build Container (ghcr.io)
-        uses: anselmes/cicd/.github/actions/build@update-gha # fixme: update-gha https://github.com/anselmes/cicd/commit/update-gha
+        uses: anselmes/cicd/.github/actions/build@main # fixme: main https://github.com/anselmes/cicd/commit/main
         if: ${{ matrix.container.repo == 'ghcr.io' }}
         with:
           build-container-image: true
@@ -58,8 +58,10 @@ jobs:
           container-image-labels: |
             org.opencontainers.image.title=${{ matrix.container.name }}
             org.opencontainers.image.description=${{ matrix.container.description || matrix.container.name }}
+            org.opencontainers.image.source=${{ github.repository }}
+
       - name: Build Container (docker.io)
-        uses: anselmes/cicd/.github/actions/build@update-gha # fixme: update-gha https://github.com/anselmes/cicd/commit/update-gha
+        uses: anselmes/cicd/.github/actions/build@main # fixme: main https://github.com/anselmes/cicd/commit/main
         if: ${{ matrix.container.repo == 'docker.io' }}
         with:
           build-container-image: true
@@ -81,3 +83,4 @@ jobs:
           container-image-labels: |
             org.opencontainers.image.title=${{ matrix.container.name }}
             org.opencontainers.image.description=${{ matrix.container.description || matrix.container.name }}
+            org.opencontainers.image.source=${{ github.repository }}
