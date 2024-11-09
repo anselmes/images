@@ -1,8 +1,8 @@
 {
-  "name": "images",
+  "name": "Images",
   "dockerComposeFile": ["${localWorkspaceFolder}/compose-dev.yaml"],
   "service": "images",
-  "workspaceFolder": "/home/devcontainer/workspace",
-  "postCreateCommand": "${containerWorkspaceFolder}/scripts/config-devos.sh",
+  "workspaceFolder": "/home/devcontainer",
+  "postCreateCommand": "${containerWorkspaceFolder}/scripts/configure.sh",
   "remoteUser": "devcontainer"
 }
