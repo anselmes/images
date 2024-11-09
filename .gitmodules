@@ -1,7 +1,6 @@
-[submodule "modules/dotfiles"]
-  path = modules/dotfiles
-  url = https://github.com/anselmes/dotfiles.git
-[submodule "modules/tooling"]
-  path = modules/tooling
-  url = https://github.com/anselmes/tooling.git
-
+[submodule "modules/config"]
+  path = modules/config
+  url = https://github.com/anselmes/config.git
+[submodule "modules/toolchain"]
+  path = modules/toolchain
+  url = https://github.com/anselmes/toolchain.git
