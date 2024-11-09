@@ -1,0 +1,7 @@
+[submodule "modules/dotfiles"]
+  path = modules/dotfiles
+  url = https://github.com/anselmes/dotfiles.git
+[submodule "modules/tooling"]
+  path = modules/tooling
+  url = https://github.com/anselmes/tooling.git
+
