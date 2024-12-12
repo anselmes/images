@@ -1,0 +1,29 @@
+# syntax=docker/dockerfile:1.7.0
+# note: build
+# Building using Ubuntu Noble since its compatible with Debian runtime
+FROM golang:bullseye AS builder
+
+# set up the workspace
+RUN mkdir /workspace
+WORKDIR /workspace
+
+# build
+RUN <<eof
+git clone https://github.com/sanselme/sandbox --single-branch --depth 1 --branch hello # fixme: pass branch as build argument
+cd /workspace/sandbox
+go build -o /workspace/hellogw ./pkg/gateway
+eof
+
+# note: package
+# Running on distroless C++ since it includes
+# all(*) the runtime dependencies go programs need
+FROM gcr.io/distroless/cc-debian12
+
+# copy executables
+COPY --from=builder /workspace/hellogw /
+
+# set the entry point (application name)
+CMD ["/hellogw"]
+
+USER nobody
+HEALTHCHECK NONE
