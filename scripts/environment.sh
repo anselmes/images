@@ -1,1 +1,1 @@
-../modules/tooling/scripts/environment.sh
+../modules/toolchain/scripts/environment.sh
