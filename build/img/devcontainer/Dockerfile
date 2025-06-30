@@ -1,37 +1,45 @@
-# SPDX-License-Identifier: GPL-3.0
+# syntax=docker/dockerfile:1.7.0
 
-FROM ubuntu:24.04
+# SPDX-License-Identifier: GPL-3.0
+# Copyright (c) 2025 Schubert Anselme <schubert@anselm.es>
+
+ARG BASE_IMAGE=ubuntu:24.04
+# checkov:skip=CKV_DOCKER_7
+FROM ${BASE_IMAGE}
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV X11VNC_SKIP_DISPLAY==""
 
-RUN apt-get update -y && \
-  apt-get install --no-install-recommends -y \
+# checkov:skip=CKV2_DOCKER_1
+RUN <<EOF
+#!/bin/bash
+
+echo EDITOR='"vim"' >>/etc/environment
+echo export GPG_TTY='"$(tty)"' >/etc/profile.d/gpg.sh
+
+apt-get update -yq
+apt-get install -y --no-install-recommends \
   ca-certificates \
-  cron \
   curl \
-  dbus \
-  file \
-  iproute2 \
-  libvirt-daemon \
-  libvirt-daemon-system \
-  openssl \
-  software-properties-common \
-  ssh \
-  systemd && \
-  apt-get clean && \
-  rm -rf /var/lib/apt/lists/*
+  git \
+  gnupg2 \
+  sudo \
+  vim \
+  zsh
 
-COPY config/systemd/journal-to-tty.service /lib/systemd/system/journal-to-tty.service
-COPY build/img/devcontainer/devcontainer /etc/sudoers.d/devcontainer
-# todo: checksum downloaded binaries
-COPY scripts/*.sh /tmp/scripts/
+chsh -s "$(command -v zsh)" "ubuntu"
 
-RUN chmod +x /tmp/scripts/*.sh && \
-  /tmp/scripts/init-devos.sh && \
-  systemctl enable journal-to-tty.service && \
-  useradd -m devcontainer
+echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/ubuntu
+chmod 0440 /etc/sudoers.d/ubuntu
 
-CMD ["/sbin/init"]
-USER devcontainer
+groups=(docker libvirt plugdev sudo)
+for g in "${groups[@]}"; do
+  usermod -aG "${g}" "ubuntu"
+done
+
+rm -rf /var/lib/apt/lists/*
+EOF
+
 HEALTHCHECK NONE
+
+USER ubuntu
+CMD ["/bin/bash"]
