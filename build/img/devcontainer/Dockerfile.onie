@@ -1,0 +1,86 @@
+# syntax=docker/dockerfile:1.7.0
+
+# SPDX-License-Identifier: GPL-3.0
+# Copyright (c) 2025 Schubert Anselme <schubert@anselm.es>
+
+ARG BASE_IMAGE=debian:stable
+# checkov:skip=CKV_DOCKER_7
+FROM ${BASE_IMAGE}
+
+# MARK: - Packages
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# checkov:skip=CKV2_DOCKER_1
+RUN <<EOF
+#!/bin/bash
+apt-get update -yq
+apt-get install -y --no-install-recommends \
+  apparmor \
+  build-essential \
+  ca-certificates \
+  curl \
+  git \
+  gnupg2 \
+  lvm2 \
+  parted \
+  ssh \
+  sudo \
+  unzip \
+  vim \
+  wget \
+  zsh
+EOF
+
+# MARK: - Configuration
+
+ARG ONIE_BRANCH=master
+ARG ONIE_REPO=https://github.com/opencomputeproject
+
+RUN <<EOF
+#!/bin/bash
+echo EDITOR='"vim"' >>/etc/environment
+
+echo export GPG_TTY='"$(tty)"' >/etc/profile.d/gpg.sh
+
+echo >> /etc/skel/.profile
+echo source /etc/profile >> /etc/skel/.profile
+
+cp -f /etc/skel/.profile /etc/skel/.zprofile
+
+# ONIE Dependencies
+git clone --depth 1 --branch ${ONIE_BRANCH} ${ONIE_REPO}/onie.git
+cd onie/build-config
+sed -i 's/python-all-dev/python3-all-dev/g' Makefile
+sed -i 's/python-sphinx/sphinx-doc sphinx-common/g' Makefile
+make debian-prepare-build-host
+
+# User Configuration
+useradd -m -s /bin/zsh -G adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev debian
+echo "debian ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/debian
+chmod 0440 /etc/sudoers.d/debian
+
+# Clean Up
+rm -rf onie
+rm -rf /var/lib/apt/lists/*
+EOF
+
+# MARK: - User
+
+USER debian
+
+RUN <<EOF
+#!/bin/bash
+cp -f /etc/skel/.profile /home/ubuntu/.profile
+cp -f /etc/skel/.zprofile /home/ubuntu/.zprofile
+curl -fsSLo /tmp/ohmyzsh-install.sh https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
+bash /tmp/ohmyzsh-install.sh --unattended
+rm -f /tmp/ohmyzsh-install.sh
+EOF
+
+# MARK: - Runtime
+
+HEALTHCHECK NONE
+
+WORKDIR /home/debian
+CMD ["/bin/zsh", "-l"]
