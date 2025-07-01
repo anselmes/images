@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0
 # Copyright (c) 2025 Schubert Anselme <schubert@anselm.es>
 
-ARG BASE_IMAGE=ghcr.io/labsonline/devcontainer:24.04
+ARG BASE_IMAGE=ghcr.io/labsonline/devcontainer/toolchain:24.04
 # checkov:skip=CKV_DOCKER_7
 FROM ${BASE_IMAGE}
 
@@ -31,31 +31,6 @@ echo export PATH="\"\${SWIFTLY_BIN_DIR}\${PATH:+:\${PATH}}\"" >>/etc/profile.d/s
 
 source /etc/profile.d/swift.sh
 
-apt-get update -yq
-# FIXME: we need jdk24+ for java-interop
-apt-get install -y --no-install-recommends \
-  binutils \
-  build-essential \
-  cmake \
-  default-jdk \
-  git \
-  gnupg2 \
-  libc6-dev \
-  libcurl4-openssl-dev \
-  libedit2 \
-  libgcc-13-dev \
-  libncurses-dev \
-  libpython3-dev \
-  libsqlite3-0 \
-  libstdc++-13-dev \
-  libxml2-dev \
-  libz3-dev \
-  ninja-build \
-  pkg-config \
-  tzdata \
-  unzip \
-  zlib1g-dev
-
 # Download swiftly
 curl -O https://download.swift.org/swiftly/linux/swiftly-1.0.1-$(uname -m).tar.gz
 
@@ -82,6 +57,7 @@ EOF
 USER ubuntu
 
 RUN <<EOF
+#!/bin/bash
 . /etc/profile.d/swift.sh
 
 # Static SDK
@@ -101,13 +77,15 @@ USER root
 
 # Clean Up
 RUN <<EOF
+#!/bin/bash
 rm -f *.txt
 rm -f swiftly-1.0.1-$(uname -m).tar.gz
 rm -f swiftly-1.0.1-$(uname -m).tar.gz.sig
-rm -rf /var/lib/apt/lists/*
 EOF
+
+USER ubuntu
 
 HEALTHCHECK NONE
 
-USER ubuntu
-CMD ["/bin/bash"]
+WORKDIR /home/ubuntu
+CMD ["/bin/zsh"]

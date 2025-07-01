@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0
 # Copyright (c) 2025 Schubert Anselme <schubert@anselm.es>
 
-ARG BASE_IMAGE=ghcr.io/labsonline/devcontainer:24.04
+ARG BASE_IMAGE=ghcr.io/labsonline/devcontainer/toolchain:24.04
 # checkov:skip=CKV_DOCKER_7
 FROM ${BASE_IMAGE}
 
@@ -28,10 +28,7 @@ echo export PATH="\"\${GOPATH}/bin\${PATH:+:\${PATH}}\"" >>/etc/profile.d/go.sh
 . /etc/profile.d/go.sh
 
 apt-get update -yq
-apt-get install -y --no-install-recommends \
-  build-essential \
-  golang-go \
-  minisign
+apt-get install -y --no-install-recommends golang-go
 
 # Download and verify the checksum file for the release
 curl -OL https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/sha256.txt
@@ -64,7 +61,9 @@ rm -rf buf/
 rm -rf /var/lib/apt/lists/*
 EOF
 
+USER ubuntu
+
 HEALTHCHECK NONE
 
-USER ubuntu
-CMD ["/bin/bash"]
+WORKDIR /home/ubuntu
+CMD ["/bin/zsh"]

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0
 # Copyright (c) 2025 Schubert Anselme <schubert@anselm.es>
 
-ARG BASE_IMAGE=ghcr.io/labsonline/devcontainer:24.04
+ARG BASE_IMAGE=ghcr.io/labsonline/devcontainer/toolchain:24.04
 # checkov:skip=CKV_DOCKER_7
 FROM ${BASE_IMAGE}
 
@@ -27,16 +27,17 @@ echo export PATH="\"\${CARGO_HOME}/bin\${PATH:+:\${PATH}}\"" >>/etc/profile.d/ru
 . /etc/profile.d/rust.sh
 
 apt-get update -yq
-apt-get install -y --no-install-recommends \
-  build-essential \
-  rustup
+apt-get install -y --no-install-recommends rustup
 
-rustup toolchain install stable
+rustup default stable
+cargo install bindgen-cli
 
 rm -rf /var/lib/apt/lists/*
 EOF
 
+USER ubuntu
+
 HEALTHCHECK NONE
 
-USER ubuntu
-CMD ["/bin/bash"]
+WORKDIR /home/ubuntu
+CMD ["/bin/zsh"]
