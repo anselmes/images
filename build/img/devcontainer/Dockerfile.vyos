@@ -1,0 +1,305 @@
+# syntax=docker/dockerfile:1.7.0
+
+# SPDX-License-Identifier: GPL-3.0
+# Copyright (c) 2025 Schubert Anselme <schubert@anselm.es>
+
+ARG BASE_IMAGE=debian:bookworm
+# checkov:skip=CKV_DOCKER_7
+FROM ${BASE_IMAGE}
+
+# MARK: - Packages
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# checkov:skip=CKV2_DOCKER_1
+RUN <<EOF
+#!/bin/bash
+apt-get update -yq
+apt-get install -y --no-install-recommends \
+  apparmor \
+  apt-utils \
+  bash \
+  bash-completion \
+  build-essential \
+  ca-certificates \
+  cloud-utils \
+  cpio \
+  curl \
+  debhelper \
+  debmake \
+  debootstrap \
+  devscripts \
+  dh-python \
+  dialog \
+  dosfstools \
+  equivs \
+  fakechroot \
+  fakeroot \
+  flake8 \
+  gdisk \
+  genisoimage \
+  git \
+  gnupg2 \
+  gosu \
+  iproute2 \
+  jq \
+  kpartx \
+  libapt-pkg-dev \
+  libffi-dev \
+  libpcre2-dev \
+  libtool \
+  libzmq3-dev \
+  live-build \
+  locales \
+  lsb-release \
+  lvm2 \
+  mc \
+  nano \
+  openssh-client \
+  parted \
+  pbuilder \
+  pipx \
+  pkg-config \
+  po4a \
+  procps \
+  protobuf-compiler \
+  pylint \
+  python-is-python3 \
+  python3 \
+  python3-all \
+  python3-autopep8 \
+  python3-configobj \
+  python3-contextlib2 \
+  python3-coverage \
+  python3-cracklib \
+  python3-debian \
+  python3-flake8 \
+  python3-git \
+  python3-httpretty \
+  python3-hurry.filesize \
+  python3-inotify \
+  python3-jinja2 \
+  python3-jmespath \
+  python3-jsonpatch \
+  python3-jsonschema \
+  python3-lxml \
+  python3-mock \
+  python3-netaddr \
+  python3-netifaces \
+  python3-nose \
+  python3-oauthlib \
+  python3-paramiko \
+  python3-passlib \
+  python3-pep8 \
+  python3-pip \
+  python3-protobuf \
+  python3-psutil \
+  python3-pyflakes \
+  python3-pystache \
+  python3-pytest-cov \
+  python3-serial \
+  python3-setuptools \
+  python3-stdeb \
+  python3-tabulate \
+  python3-tomli \
+  python3-tomli-w \
+  python3-unittest2 \
+  python3-xmltodict \
+  python3-yaml \
+  python3-zmq \
+  quilt \
+  sbsigntool \
+  socat \
+  squashfs-tools \
+  ssh \
+  sudo \
+  swtpm \
+  udev \
+  unzip \
+  vim \
+  vim-autopep8 \
+  wget \
+  whois \
+  yq \
+  zip \
+  zlib1g-dev \
+  zsh
+
+if dpkg-architecture -ii386 || dpkg-architecture -iamd64; then
+  apt-get install -y \
+    grub2 \
+    ovmf \
+    python3-pexpect \
+    qemu-kvm \
+    qemu-system-x86 \
+    qemu-utils \
+    syslinux
+fi
+
+# Install utillities for building grub and u-boot images
+if dpkg-architecture -iarm64; then
+  apt-get install -y \
+    dosfstools \
+    grub-efi-$(dpkg-architecture -qDEB_HOST_ARCH) \
+    u-boot-tools
+elif dpkg-architecture -iarmhf; then
+  apt-get install -y \
+    dosfstools \
+    grub-efi-arm \
+    u-boot-tools
+fi
+EOF
+
+# Python Packages
+ENV PYHUMPS_VERSION=3.8.0
+
+RUN <<EOF
+#!/bin/bash
+pip --no-cache --no-cache-dir install --break-system-packages git+https://github.com/aristanetworks/j2lint.git@341b5d5db86 pyhumps==$PYHUMPS_VERSION
+EOF
+
+# Install OCaml (required to compile libvyosconfig)
+ENV OCAML_VERSION=4.14.2
+
+RUN <<EOF
+#!/bin/bash
+curl https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh --output /tmp/opam_install.sh --retry 10 --retry-delay 5
+sed -i 's/read_tty BINDIR/BINDIR=""/' /tmp/opam_install.sh && sh /tmp/opam_install.sh
+opam init --root=/opt/opam --comp=${OCAML_VERSION} --disable-sandboxing --no-setup
+eval $(opam env --root=/opt/opam --set-root)
+opam install -y \
+  containers \
+  ctypes \
+  ctypes-build \
+  ctypes-foreign \
+  fileutils \
+  num \
+  pcre2 \
+  re \
+  xml-light
+EOF
+
+# Install open-vmdk
+ENV OPENVMDK_VERSION=master
+
+RUN <<EOF
+#!/bin/bash
+wget -O /tmp/open-vmdk-$OPENVMDK_VERSION.zip https://github.com/vmware/open-vmdk/archive/$OPENVMDK_VERSION.zip
+unzip -d /tmp/ /tmp/open-vmdk-$OPENVMDK_VERSION.zip
+cd /tmp/open-vmdk-$OPENVMDK_VERSION/
+make && make install
+cd -
+EOF
+
+#
+# live-build: building in docker fails with mounting /proc | /sys
+#
+# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=919659
+# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=921815
+# https://salsa.debian.org/installer-team/debootstrap/merge_requests/26
+#
+ARG VYOS_BRANCH=current
+ARG VYOS_REPO=vyos/vyos-build
+
+RUN <<EOF
+#!/bin/bash
+wget https://raw.githubusercontent.com/$VYOS_REPO/refs/heads/$VYOS_BRANCH/docker/patches/live-build/0001-save-package-info.patch -O /tmp/0001-save-package-info.patch
+git clone https://salsa.debian.org/live-team/live-build.git /tmp/live-build
+cd /tmp/live-build && git checkout debian/1%20240810
+patch -p1 < /tmp/0001-save-package-info.patch
+dch -n "Applying fix for save package info"
+dpkg-buildpackage -us -uc
+dpkg -i ../live-build*.deb
+wget https://salsa.debian.org/klausenbusk-guest/debootstrap/commit/a9a603b17cadbf52cb98cde0843dc9f23a08b0da.patch -O /tmp/a9a603b17cadbf52cb98cde0843dc9f23a08b0da.patch
+git clone https://salsa.debian.org/installer-team/debootstrap /tmp/debootstrap
+cd /tmp/debootstrap && git checkout 1.0.114
+patch -p1 < /tmp/a9a603b17cadbf52cb98cde0843dc9f23a08b0da.patch
+dch -n "Applying fix for docker image compile"
+dpkg-buildpackage -us -uc
+dpkg -i ../debootstrap*.deb
+cd -
+EOF
+
+# Go (required for telegraf and prometheus exporters build)
+ENV GO_VERSION_INSTALL=1.23.2
+
+RUN <<EOF
+#!/bin/bash
+wget -O /tmp/go${GO_VERSION_INSTALL}.linux-$(dpkg --print-architecture).tar.gz https://go.dev/dl/go${GO_VERSION_INSTALL}.linux-$(dpkg-architecture -qDEB_HOST_ARCH).tar.gz
+tar -C /opt -xzf /tmp/go*.tar.gz
+EOF
+
+# Extra packages
+ENV I2CUTIL_VERSION=4.4.6
+
+RUN <<EOF
+#!/bin/bash
+# FPM is used when generation Debian packages (example Intel QAT drivers)
+gem install --no-document fpm
+
+# Packages needed for OWAMP/TWAMP (service sla)
+git clone -b $I2CUTIL_VERSION https://github.com/perfsonar/i2util.git /tmp/i2util
+cd /tmp/i2util
+dpkg-buildpackage -uc -us -tc -b
+dpkg -i /tmp/*i2util*_$(dpkg-architecture -qDEB_HOST_ARCH).deb
+cd -
+EOF
+
+# MARK: - Configuration
+
+RUN <<EOF
+#!/bin/bash
+echo EDITOR='"vim"' >>/etc/environment
+
+echo export GPG_TTY='"$(tty)"' >/etc/profile.d/gpg.sh
+echo export PATH=/opt/go/bin:$PATH >> /etc/bash.bashrc
+
+echo >> /etc/skel/.profile
+echo source /etc/profile >> /etc/skel/.profile
+
+echo >> /etc/skel/.bashrc
+echo export PATH=/opt/go/bin:\${PATH:+:${PATH}} >> /etc/skel/.bashrc
+
+echo >> /etc/skel/.zshrc
+echo export PATH=/opt/go/bin:\${PATH:+:${PATH}} >> /etc/skel/.zshrc
+
+cp -f /etc/skel/.profile /etc/skel/.zprofile
+
+# Rise upper limit for UID when working in an Active Direcotry integrated
+# environment. This solves the warning: vyos_bld uid 1632000007 outside of the
+# UID_MIN 1000 and UID_MAX 60000 range
+sed -i 's/UID_MAX\t\t\t60000/UID_MAX\t\t\t2000000000/g' /etc/login.defs
+
+# Disable mouse in vim
+printf "set mouse=\nset ttymouse=\n" > /etc/vim/vimrc.local
+
+# User Configuration
+useradd -m -s /bin/zsh -G adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev debian
+sed "s/^%sudo.*/%sudo\tALL=(ALL) NOPASSWD:ALL/g" -i /etc/sudoers
+echo "vyos_bld\tALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+chmod a+s /usr/sbin/useradd /usr/sbin/groupadd
+
+# Clean Up
+rm -f /etc/apt/apt.conf.d/clean
+rm -rf /tmp/* /var/lib/apt/lists/*
+EOF
+
+# MARK: - User
+
+USER debian
+
+RUN <<EOF
+#!/bin/bash
+cp -f /etc/skel/.profile /home/ubuntu/.profile
+cp -f /etc/skel/.zprofile /home/ubuntu/.zprofile
+curl -fsSLo /tmp/ohmyzsh-install.sh https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
+bash /tmp/ohmyzsh-install.sh --unattended
+rm -f /tmp/ohmyzsh-install.sh
+EOF
+
+# MARK: - Runtime
+
+HEALTHCHECK NONE
+
+WORKDIR /home/debian
+CMD ["/bin/zsh", "-l"]
