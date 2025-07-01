@@ -7,18 +7,12 @@ ARG BASE_IMAGE=ghcr.io/labsonline/devcontainer/toolchain:24.04
 # checkov:skip=CKV_DOCKER_7
 FROM ${BASE_IMAGE}
 
-ENV DEBIAN_FRONTEND=noninteractive
-
-ARG SWIFTLY_HOME_DIR=/usr/local/swiftly
-ARG SWIFT_BRANCH=swift-6.2-branch # FIXME: we need to install the main snapshot for swift 6.2 (required for java-interop)
-
-ARG SDK_VERSION=swift-6.2-DEVELOPMENT-SNAPSHOT-2025-06-27-a  # FIXME: we need to install the main snapshot for swift 6.2 (required for java-interop)
-ARG STATIC_SDK_CHECKSUM=a8568f8a1ac04aeec1d7610d9a42c4b8e8698ee6bd988117ff44392b9d0fad0f
-ARG WASM_SDK_CHECKSUM=967c0d853bb37c02682f8d19ba5a29534aa37b1d6204e92f2a555ef3a65458f0
+# MARK: - Pre
 
 USER root
 
-# checkov:skip=CKV2_DOCKER_1
+ARG SWIFTLY_HOME_DIR=/usr/local/swiftly
+
 RUN <<EOF
 #!/bin/bash
 mkdir -p $SWIFTLY_HOME_DIR/bin $SWIFTLY_HOME_DIR/toolchains
@@ -28,8 +22,15 @@ echo export SWIFTLY_HOME_DIR="$SWIFTLY_HOME_DIR" >/etc/profile.d/swift.sh
 echo export SWIFTLY_BIN_DIR="$SWIFTLY_HOME_DIR/bin" >>/etc/profile.d/swift.sh
 echo export SWIFTLY_TOOLCHAINS_DIR="$SWIFTLY_HOME_DIR/toolchains" >>/etc/profile.d/swift.sh
 echo export PATH="\"\${SWIFTLY_BIN_DIR}\${PATH:+:\${PATH}}\"" >>/etc/profile.d/swift.sh
+EOF
 
-source /etc/profile.d/swift.sh
+# MARK: - Packages
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN <<EOF
+#!/bin/bash
+. /etc/profile.d/swift.sh
 
 # Download swiftly
 curl -O https://download.swift.org/swiftly/linux/swiftly-1.0.1-$(uname -m).tar.gz
@@ -54,7 +55,15 @@ swiftly self-update
 swiftly install main-snapshot # swift 6.2
 EOF
 
+# MARK: - User
+
 USER ubuntu
+
+ARG SWIFT_BRANCH=swift-6.2-branch # FIXME: we need to install the main snapshot for swift 6.2 (required for java-interop)
+
+ARG SDK_VERSION=swift-6.2-DEVELOPMENT-SNAPSHOT-2025-06-27-a  # FIXME: we need to install the main snapshot for swift 6.2 (required for java-interop)
+ARG STATIC_SDK_CHECKSUM=a8568f8a1ac04aeec1d7610d9a42c4b8e8698ee6bd988117ff44392b9d0fad0f
+ARG WASM_SDK_CHECKSUM=967c0d853bb37c02682f8d19ba5a29534aa37b1d6204e92f2a555ef3a65458f0
 
 RUN <<EOF
 #!/bin/bash
@@ -73,6 +82,8 @@ swift sdk install --checksum $WASM_SDK_CHECKSUM https://download.swift.org/$SWIF
 }
 EOF
 
+# MARK: - Post
+
 USER root
 
 # Clean Up
@@ -83,9 +94,11 @@ rm -f swiftly-1.0.1-$(uname -m).tar.gz
 rm -f swiftly-1.0.1-$(uname -m).tar.gz.sig
 EOF
 
+# MARK: - Runtime
+
 USER ubuntu
 
 HEALTHCHECK NONE
 
 WORKDIR /home/ubuntu
-CMD ["/bin/zsh"]
+CMD ["/bin/zsh", "-l"]

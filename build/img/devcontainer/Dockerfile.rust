@@ -7,14 +7,13 @@ ARG BASE_IMAGE=ghcr.io/labsonline/devcontainer/toolchain:24.04
 # checkov:skip=CKV_DOCKER_7
 FROM ${BASE_IMAGE}
 
-ENV DEBIAN_FRONTEND=noninteractive
+# MARK: - Pre
+
+USER root
 
 ARG CARGO_HOME=/usr/local/rust/cargo
 ARG RUSTUP_HOME=/usr/local/rust/rustup
 
-USER root
-
-# checkov:skip=CKV2_DOCKER_1
 RUN <<EOF
 #!/bin/bash
 mkdir -p $CARGO_HOME $RUSTUP_HOME
@@ -25,19 +24,31 @@ echo export RUSTUP_HOME="$RUSTUP_HOME" >>/etc/profile.d/rust.sh
 echo export PATH="\"\${CARGO_HOME}/bin\${PATH:+:\${PATH}}\"" >>/etc/profile.d/rust.sh
 
 . /etc/profile.d/rust.sh
+EOF
 
+# MARK: - Packages
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN <<EOF
+#!/bin/bash
 apt-get update -yq
 apt-get install -y --no-install-recommends rustup
 
 rustup default stable
 cargo install bindgen-cli
 
+# Clean Up
 rm -rf /var/lib/apt/lists/*
 EOF
 
+# MARK: - User
+
 USER ubuntu
+
+# MARK: - Runtime
 
 HEALTHCHECK NONE
 
 WORKDIR /home/ubuntu
-CMD ["/bin/zsh"]
+CMD ["/bin/zsh", "-l"]
