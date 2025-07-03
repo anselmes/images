@@ -20,12 +20,15 @@ apt-get install -y --no-install-recommends \
   build-essential \
   ca-certificates \
   curl \
+  fdisk \
   git \
   gnupg2 \
   lvm2 \
   parted \
+  squashfs-tools \
   ssh \
   sudo \
+  udev \
   unzip \
   vim \
   wget \
