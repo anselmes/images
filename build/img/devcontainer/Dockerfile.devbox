@@ -1,0 +1,144 @@
+# syntax=docker/dockerfile:1.7.0
+
+# SPDX-License-Identifier: GPL-3.0
+# Copyright (c) 2025 Schubert Anselme <schubert@anselm.es>
+
+ARG BASE_IMAGE=ghcr.io/labsonline/devcontainer:24.04
+# checkov:skip=CKV_DOCKER_7
+FROM ${BASE_IMAGE}
+
+# MARK: - Packages
+
+ARG VIP_CIDR="172.16.254.0/24"
+ARG IP4_RANGE="10.10.10.0/24"
+ARG IP6_RANGE="fd00:10:10::/64"
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV wg_port=51820
+
+USER root
+
+# checkov:skip=CKV2_DOCKER_1
+RUN <<EOF
+#!/bin/bash
+apt-get update -yq
+apt-get install -y --no-install-recommends \
+  bind9 \
+  dbus \
+  frr \
+  qrencode \
+  systemd \
+  wireguard
+
+# Clean Up
+rm -rf /var/lib/apt/lists/*
+EOF
+
+# MARK: - Configuration
+
+RUN <<EOF
+#!/bin/bash
+
+# config network
+sed -i 's/[#]net.ipv4.ip_forward.*/net.ipv4.ip_forward=1/g' /etc/sysctl.conf
+sed -i 's/[#]net.ipv6.conf.all.forwarding.*/net.ipv6.conf.all.forwarding=1/g' /etc/sysctl.conf
+sysctl -p
+ufw allow bgp
+ufw allow bind9
+ufw allow ${wg_port}/udp
+
+# reload firewall
+ufw --force disable
+ufw --force enable
+ufw status
+EOF
+
+# MARK: - FRR
+
+ENV bgp_as=65000
+
+COPY config/frr.conf.tmpl /etc/frr/frr.conf
+
+RUN <<EOF
+#!/bin/bash
+export hostname="$(hostname)"
+export server_ip="$(ip route list default | awk '{ print $3 }')"
+
+# generate config
+envsubst < /etc/frr/frr.conf >/tmp/frr.conf
+mv /tmp/frr.conf /etc/frr/frr.conf
+
+# enable bgpd
+sed -i 's/bgpd=.*/bgpd=yes/g' /etc/frr/daemons
+systemctl enable frr.service
+systemctl restart frr.service
+EOF
+
+# TODO: - Bind9
+
+# MARK: - Wireguard
+
+ENV ipv4_net="$(printf ${IP4_RANGE} | cut -d '/' -f 1)"
+ENV ipv6_net="$(printf ${IP6_RANGE} | cut -d '/' -f 1)"
+ENV upstream_dns=1.1.1.1
+
+ENV client_priv_key="/etc/wireguard/client.private.key"
+ENV server_pub_key="/etc/wireguard/public.key"
+
+COPY config/wireguard/wg0.conf.tmpl /etc/wireguard/wg0.conf
+COPY config/wireguard/client.conf.tmpl /home/ubuntu/client.conf
+
+RUN <<EOF
+#!/bin/bash
+
+# create server key pair
+server_priv_key="/etc/wireguard/private.key"
+wg genkey >"${server_priv_key}"
+chmod 0600 "${server_priv_key}"
+cat "${server_priv_key}" | wg pubkey >"${server_pub_key}"
+
+# create client key pair
+client_pub_key="/etc/wireguard/client.public.key"
+wg genkey | >"${client_priv_key}"
+chmod 0600 "${client_priv_key}"
+cat "${client_priv_key}" | wg pubkey | >"${client_pub_key}"
+
+# generate server config
+export privkey="$(cat ${server_priv_key})"
+export pubkey="$(cat ${client_pub_key})"
+export netdev="$(ip route list default | awk '{ print $5 }')"
+export ipv4_addr="$(printf ${ipv4_net%?}1)/24"
+export ipv6_addr="$(printf ${ipv6_net%?}:1)/64"
+
+envsubst < /etc/wireguard/wg0.conf >/tmp/wg0.conf
+mv /tmp/wg0.conf /etc/wireguard/wg0.conf
+systemctl enable quick@wg0.service
+systemctl restart quick@wg0.service
+EOF
+
+# TODO: - KCM
+
+# MARK: - User
+
+USER ubuntu
+
+# generate client config
+RUN <<EOF
+#!/bin/bash
+export privkey="$(sudo cat ${client_priv_key})"
+export pubkey="$(sudo cat ${server_pub_key})"
+export ipv4_addr="$(printf ${ipv4_net%?}2)/24"
+export ipv6_addr="$(printf ${ipv6_net%?}:2)/64"
+export dns_servers="${server_ip}, ${upstream_dns}"
+export allowed_ips="${IP4_RANGE}, ${IP6_RANGE}, ${VIP}"
+
+envsubst < wireguard/client.conf.tmpl | tee client.conf >/dev/null
+qrencode -s 10 -l H -o client.png < client.conf
+EOF
+
+# MARK: - Runtime
+
+HEALTHCHECK NONE
+
+WORKDIR /home/ubuntu
+CMD ["/sbin/init"]
