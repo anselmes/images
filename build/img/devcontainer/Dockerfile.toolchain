@@ -17,17 +17,24 @@ RUN <<EOF
 #!/bin/bash
 apt-get update -yq
 apt-get install -yq --no-install-recommends \
+  bc \
   binutils \
   bison \
   build-essential \
   ccache \
   clang \
   cmake \
+  coccinelle \
   default-jdk \
+  device-tree-compiler \
   dfu-util \
+  efitools \
   flex \
   gcc \
+  gdisk \
   gperf \
+  graphviz \
+  imagemagick \
   libc6-dev \
   libcurl4 \
   libcurl4-openssl-dev \
@@ -36,10 +43,12 @@ apt-get install -yq --no-install-recommends \
   libffi-dev \
   libgcc-13-dev \
   libgcc-9-dev \
+  libgnutls28-dev \
+  libguestfs-tools \
   libncurses-dev \
   libncurses6 \
   libpython3-dev \
-  libsqlite3-0 \
+  libsdl2-dev \
   libsqlite3-0 \
   libssl-dev \
   libstdc++-13-dev \
@@ -49,12 +58,31 @@ apt-get install -yq --no-install-recommends \
   libxml2-dev \
   libz3-dev \
   lld \
+  llvm \
+  lz4 \
+  lzma \
+  lzma-alone \
+  make \
   minisign \
   ninja-build \
+  openssl \
   pkg-config \
   python3 \
+  python3-asteval \
+  python3-coverage \
+  python3-filelock \
   python3-pip \
+  python3-pkg-resources \
+  python3-pycryptodome \
+  python3-pyelftools \
+  python3-pytest \
+  python3-pytest-xdist \
+  python3-sphinx-rtd-theme \
+  python3-sphinxcontrib.apidoc \
+  python3-subunit \
+  python3-testtools \
   python3-venv \
+  swig \
   tzdata \
   uuid-dev \
   zlib1g-dev
