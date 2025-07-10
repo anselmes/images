@@ -19,6 +19,7 @@ apt-get install -y --no-install-recommends \
   apparmor \
   ca-certificates \
   curl \
+  dbus \
   git \
   gnupg2 \
   lvm2 \
@@ -26,6 +27,7 @@ apt-get install -y --no-install-recommends \
   parted \
   ssh \
   sudo \
+  systemd \
   udev \
   unzip \
   vim \

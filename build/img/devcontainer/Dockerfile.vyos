@@ -25,6 +25,7 @@ apt-get install -y --no-install-recommends \
   cloud-utils \
   cpio \
   curl \
+  dbus \
   debhelper \
   debmake \
   debootstrap \
@@ -114,6 +115,7 @@ apt-get install -y --no-install-recommends \
   ssh \
   sudo \
   swtpm \
+  systemd \
   udev \
   unzip \
   vim \

@@ -20,6 +20,7 @@ apt-get install -y --no-install-recommends \
   build-essential \
   ca-certificates \
   curl \
+  dbus \
   fdisk \
   git \
   gnupg2 \
@@ -28,6 +29,7 @@ apt-get install -y --no-install-recommends \
   squashfs-tools \
   ssh \
   sudo \
+  systemd \
   udev \
   unzip \
   vim \
