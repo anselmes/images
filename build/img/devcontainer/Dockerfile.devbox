@@ -9,136 +9,288 @@ FROM ${BASE_IMAGE}
 
 # MARK: - Packages
 
+ARG TARGETARCH
+
+ARG K0SCTL_VERSION="0.25.1"
+ARG K0SCTL_CHECKSUM_URL="https://github.com/k0sproject/k0sctl/releases/download/v${K0SCTL_VERSION}/checksums.txt"
+ARG K0SCTL_URL="https://github.com/k0sproject/k0sctl/releases/download/v${K0SCTL_VERSION}/k0sctl-linux-${TARGETARCH}"
+
 ARG VIP_CIDR="172.16.254.0/24"
 ARG IP4_RANGE="10.10.10.0/24"
 ARG IP6_RANGE="fd00:10:10::/64"
 
 ENV DEBIAN_FRONTEND=noninteractive
+
 ENV wg_port=51820
+ENV allowed_ips="${IP4_RANGE}, ${IP6_RANGE}, ${VIP_CIDR}"
 
 USER root
 
-# checkov:skip=CKV2_DOCKER_1
 RUN <<EOF
 #!/bin/bash
+
+apt-get update -yq
 apt-get update -yq
 apt-get install -y --no-install-recommends \
   bind9 \
-  dbus \
   frr \
+  gettext \
   qrencode \
-  systemd \
   wireguard
 
+# Install k0ctl
+curl -fsSL "${K0SCTL_URL}" -o /tmp/k0sctl
+curl -fsSL "${K0SCTL_CHECKSUM_URL}" -o /tmp/checksums.txt
+
+expected_checksum=$(grep "k0sctl-linux-${TARGETARCH}" /tmp/checksums.txt | awk '{ print $1 }')
+actual_checksum=$(sha256sum /tmp/k0sctl | awk '{ print $1 }')
+
+if [ "$expected_checksum" != "$actual_checksum" ]; then
+  echo "Checksum verification failed"
+  exit 1
+fi
+
+install -Dm755 /tmp/k0sctl /usr/local/bin/k0sctl
+
 # Clean Up
-rm -rf /var/lib/apt/lists/*
+rm -rf /var/lib/apt/lists/* /tmp/*
 EOF
 
 # MARK: - Configuration
 
+ENV default_if=eth0
+ENV upstream_dns=1.1.1.1
+
 RUN <<EOF
 #!/bin/bash
 
-# config network
+# Configure Hostname
+cat <<'HOSTNAME' >/etc/hostname
+devbox
+HOSTNAME
+
+# Configure Host File
+cat <<'HOST' >/etc/hosts
+127.0.0.1       localhost
+127.0.0.1       devbox.local devbox
+
+::1     localhost ip6-localhost ip6-loopback
+::1     devbox.local devbox
+fe00::  ip6-localnet
+ff00::  ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+HOST
+
+# Configure Network
 sed -i 's/[#]net.ipv4.ip_forward.*/net.ipv4.ip_forward=1/g' /etc/sysctl.conf
 sed -i 's/[#]net.ipv6.conf.all.forwarding.*/net.ipv6.conf.all.forwarding=1/g' /etc/sysctl.conf
 sysctl -p
-ufw allow bgp
-ufw allow bind9
-ufw allow ${wg_port}/udp
 
-# reload firewall
-ufw --force disable
-ufw --force enable
-ufw status
+# Configure Firewall
+if $(command -v ufw) >/dev/null; then
+  ufw allow bgp
+  ufw allow bind9
+  ufw allow ${wg_port}/udp
+
+  # reload firewall
+  ufw --force disable
+  ufw --force enable
+  ufw status
+fi
+
+# Configure Systemd
+ln -sf /lib/systemd/systemd /sbin/init
+
+mkdir -p /etc/k0s/containerd.d
+cat <<'CONTAINERD' >/etc/k0s/containerd.d/systemd.toml
+[plugins]
+  [plugins."io.containerd.grpc.v1.cri"]
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            SystemdCgroup = true
+CONTAINERD
+
+cat <<'SERVICE' >/etc/systemd/system/k0sctl-apply.service
+[Unit]
+Description=Apply k0sctl cluster configuration
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+ConditionPathExists=/home/ubuntu/cluster.yaml
+ExecStart=/usr/local/bin/k0sctl apply --config /home/ubuntu/cluster.yaml
+
+[Install]
+WantedBy=multi-user.target
+SERVICE
+
+# Enable the services
+systemctl enable k0sctl-apply.service
 EOF
 
 # MARK: - FRR
 
 ENV bgp_as=65000
 
-COPY config/frr.conf.tmpl /etc/frr/frr.conf
+COPY config/frr.conf.tmpl /tmp
 
 RUN <<EOF
 #!/bin/bash
-export hostname="$(hostname)"
-export server_ip="$(ip route list default | awk '{ print $3 }')"
 
-# generate config
-envsubst < /etc/frr/frr.conf >/tmp/frr.conf
-mv /tmp/frr.conf /etc/frr/frr.conf
+export hostname="devbox"
+export gateway_ip="$(ip route list default | awk '{ print $3 }')"
+export server_ip="$(ip -4 addr show dev ${default_if} | awk '/inet / {print $2}' | cut -d'/' -f1)"
 
-# enable bgpd
+# Generate Configuration
+envsubst </tmp/frr.conf.tmpl >/etc/frr/frr.conf
+
+# Enable BGP Daemon
 sed -i 's/bgpd=.*/bgpd=yes/g' /etc/frr/daemons
-systemctl enable frr.service
-systemctl restart frr.service
+sed -i 's/zebra=.*/zebra=yes/g' /etc/frr/daemons
+
+# Create Override Configuration
+mkdir -p /etc/systemd/system/frr.service.d
+cat << 'OVERRIDE' > /etc/systemd/system/frr.service.d/override.conf
+[Service]
+PIDFile=
+ExecStartPre=
+ExecStart=
+ExecStart=/usr/lib/frr/frrinit.sh start
+ExecReload=/usr/lib/frr/frrinit.sh reload
+ExecStop=/usr/lib/frr/frrinit.sh stop
+KillMode=mixed
+TimeoutStopSec=5
+OVERRIDE
 EOF
 
-# TODO: - Bind9
+# MARK: - Bind9
+
+COPY config/bind /tmp
+
+RUN <<EOF
+#!/bin/bash
+
+export ipv4_ip="$(echo ${IP4_RANGE} | cut -d '/' -f 1 | sed 's/[0-9]*$/1/')"
+export ipv6_ip="$(echo ${IP6_RANGE} | cut -d '/' -f 1 | sed 's/[0-9]*$/1/')"
+export zone_v4="$(echo ${IP4_RANGE} | cut -d '.' -f 1)"
+export zone_v6="$(echo ${IP6_RANGE} | cut -d ':' -f 1)"
+
+mkdir -p /etc/bind/dev
+
+# Generate Keys
+rndc-confgen -a -k dev. -c /etc/bind/dev/dev.key
+rndc-confgen -a -k rndc-dev-key -c /etc/bind/dev/rndc.key
+
+# Generate Configuration
+envsubst </tmp/named.conf.dev.tmpl >/etc/bind/dev/named.conf.dev
+envsubst </tmp/named.conf.dev.options.tmpl >/etc/bind/dev/named.conf.dev.options
+envsubst </tmp/named.conf.dev.dev-zones.tmpl >/etc/bind/dev/named.conf.dev.dev-zones
+envsubst </tmp/db.dev.tmpl >/etc/bind/dev/db.dev
+envsubst </tmp/db.v4.tmpl >/etc/bind/dev/db.v4
+envsubst </tmp/db.v6.tmpl >/etc/bind/dev/db.v6
+
+# Apply Configuration
+echo -e '\ninclude "/etc/bind/dev/named.conf.dev";' >> /etc/bind/named.conf
+sed -i '/^};/i\\n\	include "/etc/bind/dev/named.conf.dev.options";' /etc/bind/named.conf.options
+
+# Fix Permissions
+chown -R bind:bind /etc/bind/dev
+EOF
 
 # MARK: - Wireguard
-
-ENV ipv4_net="$(printf ${IP4_RANGE} | cut -d '/' -f 1)"
-ENV ipv6_net="$(printf ${IP6_RANGE} | cut -d '/' -f 1)"
-ENV upstream_dns=1.1.1.1
 
 ENV client_priv_key="/etc/wireguard/client.private.key"
 ENV server_pub_key="/etc/wireguard/public.key"
 
-COPY config/wireguard/wg0.conf.tmpl /etc/wireguard/wg0.conf
-COPY config/wireguard/client.conf.tmpl /home/ubuntu/client.conf
+COPY config/wireguard /tmp
 
 RUN <<EOF
 #!/bin/bash
 
-# create server key pair
+export ipv4_addr="$(echo ${IP4_RANGE} | cut -d '/' -f 1 | sed 's/[0-9]*$/1/')/24"
+export ipv6_addr="$(echo ${IP6_RANGE} | cut -d '/' -f 1 | sed 's/[0-9]*$/1/')/64"
+export server_ip="$(ip -4 addr show dev ${default_if} | awk '/inet / {print $2}' | cut -d'/' -f1)"
+
+# Create Server Key Pair
 server_priv_key="/etc/wireguard/private.key"
 wg genkey >"${server_priv_key}"
 chmod 0600 "${server_priv_key}"
 cat "${server_priv_key}" | wg pubkey >"${server_pub_key}"
 
-# create client key pair
+# Create Client Key Pair
 client_pub_key="/etc/wireguard/client.public.key"
-wg genkey | >"${client_priv_key}"
+wg genkey >"${client_priv_key}"
 chmod 0600 "${client_priv_key}"
-cat "${client_priv_key}" | wg pubkey | >"${client_pub_key}"
+cat "${client_priv_key}" | wg pubkey >"${client_pub_key}"
 
-# generate server config
+# Generate Server Config
 export privkey="$(cat ${server_priv_key})"
 export pubkey="$(cat ${client_pub_key})"
 export netdev="$(ip route list default | awk '{ print $5 }')"
-export ipv4_addr="$(printf ${ipv4_net%?}1)/24"
-export ipv6_addr="$(printf ${ipv6_net%?}:1)/64"
 
-envsubst < /etc/wireguard/wg0.conf >/tmp/wg0.conf
-mv /tmp/wg0.conf /etc/wireguard/wg0.conf
-systemctl enable quick@wg0.service
-systemctl restart quick@wg0.service
+envsubst </tmp/wg0.conf.tmpl >/etc/wireguard/wg0.conf
+
+# Enable Wireguard
+systemctl enable wg-quick@wg0.service
 EOF
-
-# TODO: - KCM
 
 # MARK: - User
 
 USER ubuntu
 
-# generate client config
 RUN <<EOF
 #!/bin/bash
+
 export privkey="$(sudo cat ${client_priv_key})"
 export pubkey="$(sudo cat ${server_pub_key})"
-export ipv4_addr="$(printf ${ipv4_net%?}2)/24"
-export ipv6_addr="$(printf ${ipv6_net%?}:2)/64"
-export dns_servers="${server_ip}, ${upstream_dns}"
-export allowed_ips="${IP4_RANGE}, ${IP6_RANGE}, ${VIP}"
 
-envsubst < wireguard/client.conf.tmpl | tee client.conf >/dev/null
-qrencode -s 10 -l H -o client.png < client.conf
+export gateway_ip="$(ip route list default | awk '{ print $3 }')"
+export server_ip="$(ip -4 addr show dev ${default_if} | awk '/inet / {print $2}' | cut -d'/' -f1)"
+export dns_servers="${gateway_ip}, ${upstream_dns}"
+
+export ipv4_addr="$(echo ${IP4_RANGE} | cut -d '/' -f 1 | sed 's/[0-9]*$/2/')/24"
+export ipv6_addr="$(echo ${IP6_RANGE} | cut -d '/' -f 1 | sed 's/[0-9]*$/2/')/64"
+
+# Generate Wireguard Client Configuration
+envsubst </tmp/client.conf.tmpl  >/home/ubuntu/client.conf
+qrencode -s 10 -l H -o /home/ubuntu/client.png </home/ubuntu/client.conf
+EOF
+
+# MARK: - KCM
+
+COPY config/cluster.yaml.tmpl /tmp
+
+RUN <<EOF
+#!/bin/bash
+
+# export SSH_AUTH_SOCK=""
+export server_ip="127.0.0.1"
+
+# Generate SSH Configuration
+cat <<'SSH' >/home/ubuntu/.ssh/config
+Host *
+  AddKeysToAgent yes
+  ForwardAgent yes
+  IdentityFile ~/.ssh/id_ed25519
+  StrictHostKeyChecking no
+  User ubuntu
+  UserKnownHostsFile /dev/null
+SSH
+
+# Generate SSH Key Pair
+ssh-keygen -t ed25519 -f /home/ubuntu/.ssh/id_ed25519 -N '' -C 'ubuntu@devbox'
+cat /home/ubuntu/.ssh/id_ed25519.pub >>/home/ubuntu/.ssh/authorized_keys
+
+# Generate Cluster Config
+envsubst </tmp/cluster.yaml.tmpl >/home/ubuntu/cluster.yaml
 EOF
 
 # MARK: - Runtime
 
-HEALTHCHECK NONE
+HEALTHCHECK CMD [ "k0s", "status" ]
 
 WORKDIR /home/ubuntu
 CMD ["/sbin/init"]
