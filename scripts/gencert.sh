@@ -1,1 +1,0 @@
-../modules/tooling/scripts/gencert.sh
