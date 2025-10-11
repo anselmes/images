@@ -1,14 +1,14 @@
 ---
 images:
-  compiler: ${arch}-linux-gnu-
   bootloader:
-    targets:
-      - qemu:arm:qemu_arm_defconfig
-      - qemu:aarch64:qemu_arm64_defconfig
-      - qemu:riscv64:qemu-riscv64_spl_defconfig
-      - socfpga:arm:socfpga_de10_standard_defconfig
-      - socfpga:aarch64:socfpga_agilex5_defconfig
-  kernel: {}
+    - qemu:arm:qemu_arm_defconfig
+    - qemu:aarch64:qemu_arm64_defconfig
+    - qemu:riscv64:qemu-riscv64_spl_defconfig
+    - socfpga:aarch64:socfpga_agilex5_defconfig
+    - socfpga:arm:socfpga_de10_standard_defconfig
+  kernel:
+    - socfpga:socfpga_defconfig:arm,aarch64
+    - ubunbu:ubuntu_defconfig:amd64,arm,aarch64,riscv64
   container:
     devcontainers: []
     languanges: []
