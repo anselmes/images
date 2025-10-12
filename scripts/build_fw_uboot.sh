@@ -5,7 +5,8 @@ set -eo pipefail
 branch="master"
 branch_socfpga="socfpga_v2025.04"
 
-targets=($(yq '.images.bootloader.targets[]' config/image.yaml))
+targets="${1}"
+[[ -z "$targets" ]] && targets=($(yq '.images.bootloader[]' config/image.yaml))
 
 (
   for item in "${targets[@]}"; do
