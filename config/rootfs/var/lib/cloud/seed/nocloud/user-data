@@ -1,0 +1,15 @@
+#cloud-config
+fqdn: ubuntu.local
+hostname: ubuntu
+manage_etc_hosts: true
+package_update: true
+package_upgrade: true
+timezone: America/Toronto
+growpart:
+  mode: auto
+  ignore_growroot_disabled: false
+  devices: [/]
+packages: []
+# - ubuntu-desktop
+# - ubuntu-standard
+# - zsh

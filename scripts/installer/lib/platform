@@ -1,0 +1,134 @@
+# FIXME: install kernel
+install_kernel() {
+  local KERNEL_VERSION="$1"
+
+  # ls /tmp/*.deb | grep dbg | xargs rm -f
+  # ln -s /sbin/fsck.zfs /sbin/fsck.zfs_member
+  # dpkg -i /tmp/*.deb || apt-get -f install -y
+  apt-get update -yq
+  apt-get install linux-image-generic-hwe-${KERNEL_VERSION}
+}
+
+create_users() {
+  local OS="$1"
+  local groups="adm,dialout,cdrom,floppy,audio,dip,video,plugdev,lxd"
+
+  groupadd --system lxd
+  groupadd admin
+
+  # create ${OS} user and lock it
+  useradd -m -s /usr/sbin/nologin -G "${groups}" "${OS}"
+  passwd -l "${OS}"
+  grep -qa "DenyUsers ${OS}" /etc/ssh/sshd_config || echo "DenyUsers ${OS}" >>/etc/ssh/sshd_config
+  cp -a /etc/skel/. /home/"${OS}"
+
+  # create admin user and set password to changeme (for now)
+  useradd -m -s /bin/bash -g admin -G "${groups}" admin
+  echo "admin:changeme" | chpasswd
+  cp -a /etc/skel/. /home/admin
+
+  # update permissions
+  usermod -aG docker "${OS}"
+  usermod -aG docker admin
+  usermod -aG sudo admin
+}
+
+# Function to generate fstab entries
+generate_fstab() {
+  local fstab_file="/tmp/fstab.new"
+
+  echo "Generating fstab entries..."
+
+  # Create fstab header
+  cat > "$fstab_file" << 'EOF'
+# /etc/fstab: static file system information.
+#
+# Use 'blkid' to print the universally unique identifier for a
+# device; this may be used with UUID= as a more robust way to name devices
+# that works even if disks are added and removed. See fstab(5).
+#
+# <file system> <mount point>   <type>  <options>       <dump>  <pass>
+
+EOF
+
+  # Add ext4 partitions for virtual machines
+  if [ "$IS_VIRTUAL" = true ]; then
+    if [ -n "$ROOT_PARTITION" ]; then
+      echo "Adding ROOT partition to fstab"
+      echo "PARTLABEL=ROOT          /               ext4    defaults        0       1" >> "$fstab_file"
+    fi
+
+    if [ -n "$BOOT_PARTITION" ]; then
+      echo "Adding BOOT partition to fstab"
+      echo "PARTLABEL=BOOT          /boot           ext4    defaults        0       2" >> "$fstab_file"
+    fi
+  fi
+
+  # Add EFI partition entry
+  if [ -n "$EFI_PARTITION" ]; then
+    echo "Adding EFI partition to fstab"
+    echo "PARTLABEL=EFI           /boot/efi       vfat    umask=0077      0       1" >> "$fstab_file"
+  fi
+
+  # Add bind mount for grub
+  echo "Adding grub bind mount to fstab"
+  echo "/boot/efi/grub          /boot/grub      none    bind            0       0" >> "$fstab_file"
+
+  # Add common entries
+  echo "" >> "$fstab_file"
+  # echo "# Temporary filesystems" >> "$fstab_file"
+  # echo "tmpfs                   /tmp            tmpfs   defaults,noatime,mode=1777 0 0" >> "$fstab_file"
+  # echo "tmpfs                   /dev/shm        tmpfs   defaults        0       0" >> "$fstab_file"
+
+  echo "fstab generated at: $fstab_file"
+  echo "=== fstab contents ==="
+  cat "$fstab_file"
+  echo "====================="
+
+  # Store fstab location for later use
+  FSTAB_FILE="$fstab_file"
+
+  return 0
+}
+
+# Function to detect if running on baremetal or virtual machine
+detect_environment() {
+  local env_type="unknown"
+
+  # Method 1: Check systemd-detect-virt (most reliable if available)
+  if command -v systemd-detect-virt >/dev/null 2>&1; then
+    local virt_result=$(systemd-detect-virt 2>/dev/null || echo "none")
+    if [ "$virt_result" = "none" ]; then
+      env_type="baremetal"
+    else
+      env_type="virtual ($virt_result)"
+    fi
+  # Method 2: Check DMI information
+  elif [ -r /sys/class/dmi/id/product_name ]; then
+    local product_name=$(cat /sys/class/dmi/id/product_name 2>/dev/null || echo "")
+    local sys_vendor=$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || echo "")
+
+    case "$product_name$sys_vendor" in
+      *VMware*|*VirtualBox*|*KVM*|*QEMU*|*Microsoft*Hyper-V*|*Xen*|*Parallels*)
+        env_type="virtual"
+        ;;
+      *)
+          # Method 3: Check for virtualization CPU flags
+        if grep -q "hypervisor" /proc/cpuinfo 2>/dev/null; then
+          env_type="virtual"
+        else
+          env_type="baremetal"
+        fi
+        ;;
+    esac
+  # Method 4: Fallback - check CPU flags only
+  elif [ -r /proc/cpuinfo ]; then
+      if grep -q "hypervisor" /proc/cpuinfo 2>/dev/null; then
+        env_type="virtual"
+      else
+        env_type="baremetal"
+      fi
+  fi
+
+  echo "$env_type"
+}

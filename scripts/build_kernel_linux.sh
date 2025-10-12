@@ -20,18 +20,16 @@ targets="${1}"
 
     export ARCH="$arch"
     export KDEB_CHANGELOG_DIST=noble   # silence that “unstable / lsb-release” nit
-    export LOCALVERSION_AUTO=false
-    export LOCALVERSION="-${target}"
 
     for arch in "${archs[@]}"; do
       if [[ "$arch" == "arm" ]]; then
-        export CROSS_COMPILE="${arch}-linux-gnueabihf-"
+        export CROSS_COMPILE="${ARCH}-linux-gnueabihf-"
       elif [[ "$arch" == "arm64" || "$arch" == "aarch64" ]]; then
-        export CROSS_COMPILE="${arch}-linux-gnueabi-"
+        export CROSS_COMPILE="${ARCH}-linux-gnueabi-"
       elif [[ "$arch" == "riscv32" || "$arch" == "riscv64" ]]; then
-        export CROSS_COMPILE="${arch}-linux-gnu-"
+        export CROSS_COMPILE="${ARCH}-linux-gnu-"
       else
-        export CROSS_COMPILE="${arch}-linux-gnu-"
+        export CROSS_COMPILE="${ARCH}-linux-gnu-"
       fi
 
       cd "$LINUX_ROOT"
@@ -56,7 +54,14 @@ targets="${1}"
         make "$config"
       fi
 
-      make -j $(nproc) zImage dtbs bindeb-pkg
+      ./scripts/config --enable CONFIG_EFI=y
+      ./scripts/config --enable CONFIG_EFI_STUB=y
+      ./scripts/config --enable CONFIG_EFI_ZBOOT=y
+
+      ./scripts/config --disable LOCALVERSION_AUTO
+      ./scripts/config --set-str LOCALVERSION "-${target}"
+
+      make -j $(nproc) zImage dtbs modules bindeb-pkg
 
       cp -f arch/arm/boot/zImage "${WORKSPACE}/build/${output}"
       cp -f arch/arm/boot/dts/*.dtb "${WORKSPACE}/build/${output}.dtb"

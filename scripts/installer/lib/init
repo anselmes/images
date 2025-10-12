@@ -1,0 +1,51 @@
+[ -n "$SCRIPTSDIR" ] && {
+  . "${SCRIPTSDIR}/installer/lib/utility"
+  . "${SCRIPTSDIR}/installer/lib/check-onie"
+  . "${SCRIPTSDIR}/installer/lib/platform"
+}
+
+disable_log_compression() {
+  # disable log compression
+  for file in /etc/logrotate.d/* ; do
+    if grep -Eq "(^|[^#y])compress" "$file" ; then
+      sed -i -r "s/(^|[^#y])(compress)/\1#\2/" "$file"
+    fi
+  done
+}
+
+# Cleanup function
+cleanup() {
+  local exit_code=$?
+
+  if [[ -n "$DEV" ]]; then
+    for d in dev/pts sys/firmware/efi/efivars; do
+      mountpoint -q "/mnt/$d" && sudo -E umount "/mnt/$d"
+    done
+
+    for d in dev proc sys run tmp; do
+      mountpoint -q "/mnt/$d" && sudo -E umount -lf "/mnt/$d"
+    done
+
+    # Unmount EFI partition if mounted
+    if mountpoint -q "/mnt/boot/grub" 2>/dev/null; then
+      mountpoint -q "/mnt/boot/grub" && sudo umount -l "/mnt/boot/grub"
+    fi
+
+    if mountpoint -q "/mnt/boot/efi" 2>/dev/null; then
+      mountpoint -q "/mnt/boot/efi" && sudo umount -l "/mnt/boot/efi"
+    fi
+
+    # unmount all filesystem
+    sudo zfs umount -a
+    sudo zpool export -a
+
+    # Detach loop device if it exists
+    if losetup -a | grep -q "$DEV"; then
+      sudo -E losetup -d "$DEV" || true
+    fi
+  fi
+
+  rm -f /tmp/base.tar.gz /tmp/fs.tar.gz /tmp/memtest86.zip
+
+  exit $exit_code
+}

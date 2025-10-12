@@ -1,0 +1,66 @@
+setup_serial_getty_override() {
+  mkdir -p /etc/systemd/system/serial-getty@ttyAMA0.service.d
+  cat <<EOF >/etc/systemd/system/serial-getty@ttyAMA0.service.d/override.conf
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin admin --noclear %I \$TERM
+EOF
+}
+
+set_resolv_conf() {
+  cat /etc/resolv.conf >/dev/null 2>&1 || {
+    mkdir -p /run/systemd/resolve
+    echo "nameserver 1.1.1.1" >/run/systemd/resolve/stub-resolv.conf
+    echo "nameserver 9.9.9.9" >>/run/systemd/resolve/stub-resolv.conf
+  }
+
+  ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+}
+
+extract_rootfs() {
+  local BASE="$1"
+
+  # create rootfs only if it doesn't exist
+  if [[ ! -f "/etc/os-release" ]]; then
+    curl -fsSLo /tmp/base.tar.gz "$BASE"
+    sudo tar --numeric-owner -xf /tmp/base.tar.gz -C /mnt
+    sudo mkdir /mnt/etc/zfs
+    sudo cp /etc/zfs/zpool.cache /mnt/etc/zfs/
+  else
+    echo "Rootfs already exists, skipping..."
+  fi
+}
+
+add_filesystem_content() {
+  # add content to the filesystem
+  if [[ ! -f "/mnt/tmp/configure.sh" ]]; then
+    echo "Adding content to filesystem..."
+    tar --numeric-owner -czf /tmp/fs.tar.gz -C config/rootfs .
+    sudo tar --numeric-owner -xzf /tmp/fs.tar.gz -C /mnt
+    sudo cp -f scripts/buildimg/configure.sh "/mnt/tmp/configure.sh"
+    sudo cp -f scripts/buildimg/motd.sh "/mnt/tmp/motd.sh"
+    sudo cp -f scripts/buildimg/packages.sh "/mnt/tmp/packages.sh"
+    sudo cp -rf scripts/buildimg/installer "/mnt/tmp/installer"
+    # FIXME: custom kernel
+    # if ls "${KERNEL}"/*.deb 1> /dev/null 2>&1; then
+    #   cp -f "${KERNEL}"/*.deb "/mnt/tmp/"
+    # else
+    #   echo "Warning: No kernel .deb files found in ${KERNEL}/"
+    # fi
+  else
+    echo "Content already added to filesystem, skipping..."
+  fi
+}
+
+generate_manifest() {
+  local OS="$1"
+
+  # generate manifest
+  dpkg-query -W --showformat='${Package} ${Version}\n' >/image/casper/filesystem.manifest
+  cp -v /image/casper/filesystem.manifest /image/casper/filesystem.manifest-desktop
+  sed -i '/ubiquity/d' /image/casper/filesystem.manifest-desktop
+  sed -i "/${OS}/d" /image/casper/filesystem.manifest-desktop
+  sed -i '/discover/d' /image/casper/filesystem.manifest-desktop
+  sed -i '/laptop-detect/d' /image/casper/filesystem.manifest-desktop
+  sed -i '/os-prober/d' /image/casper/filesystem.manifest-desktop
+}

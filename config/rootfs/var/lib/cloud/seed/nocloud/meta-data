@@ -1,0 +1,5 @@
+dsmode: local
+instance-id: 2B62F215-B4E5-4818-9353-F11FCF0BCD5E
+local-hostname: ubuntu
+public-keys:
+  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKgAbVwkk5l/yxWjA+VzbX6htL96fQXFxsqJjXqkCTE0
