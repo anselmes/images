@@ -43,6 +43,13 @@ targets="${1}"
     fi
 
     make "$config"
+
+    ./scripts/config --enable partition_type_guid
+
+    ./scripts/config --enable efi_partition
+    ./scripts/config --set-val efi_partition_entries_numbers 128
+    ./scripts/config --set-val efi_partition_entries_off 0
+
     make -j $(nproc)
 
     if $(stat u-boot-with-spl.sfp >/dev/null 2>&1); then

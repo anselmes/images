@@ -54,12 +54,12 @@ targets="${1}"
         make "$config"
       fi
 
-      ./scripts/config --enable CONFIG_EFI=y
-      ./scripts/config --enable CONFIG_EFI_STUB=y
-      ./scripts/config --enable CONFIG_EFI_ZBOOT=y
+      ./scripts/config --enable efi
+      ./scripts/config --enable efi_stub
+      ./scripts/config --enable efi_zboot
 
-      ./scripts/config --disable LOCALVERSION_AUTO
-      ./scripts/config --set-str LOCALVERSION "-${target}"
+      ./scripts/config --disable localversion_auto
+      ./scripts/config --set-str localversion "-${target}"
 
       make -j $(nproc) zImage dtbs modules bindeb-pkg
 
