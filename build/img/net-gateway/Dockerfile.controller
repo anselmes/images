@@ -1,0 +1,29 @@
+# syntax=docker/dockerfile:1.7.0
+# note: build
+# Building using Ubuntu Noble since its compatible with Debian runtime
+FROM golang:bullseye AS builder
+
+# set up the workspace
+RUN mkdir /workspace
+WORKDIR /workspace
+
+# build
+RUN <<eof
+git clone https://github.com/knative-extensions/net-gateway-api
+cd /workspace/net-gateway-api
+go build -o /workspace/controller ./cmd/controller
+eof
+
+# note: package
+# Running on distroless C++ since it includes
+# all(*) the runtime dependencies Swift programs need
+FROM gcr.io/distroless/cc-debian12
+
+# copy executables
+COPY --from=builder /workspace/controller /
+
+# set the entry point (application name)
+CMD ["/controller"]
+
+USER nobody
+HEALTHCHECK NONE
