@@ -26,6 +26,26 @@ jobs:
             platform: linux/amd64,linux/arm64,linux/riscv64
             repo: docker.io
             path: sanselme
+          - name: hello
+            platform: linux/amd64,linux/arm64,linux/riscv64
+            repo: ghcr.io
+            path: sanselme
+            file: build/img/hello/Dockerfile.daemon
+          - name: hello
+            platform: linux/amd64,linux/arm64,linux/riscv64
+            repo: ghcr.io
+            path: sanselme
+            file: build/img/hello/Dockerfile.openapi
+          - name: hello
+            platform: linux/amd64,linux/arm64,linux/riscv64
+            repo: ghcr.io
+            path: sanselme
+            file: build/img/hello/Dockerfile.cloudevent
+          - name: hello
+            platform: linux/amd64,linux/arm64,linux/riscv64
+            repo: ghcr.io
+            path: sanselme
+            file: build/img/hello/Dockerfile.webclient
     permissions:
       contents: read
       pages: write
@@ -37,11 +57,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Build Container (ghcr.io)
-        uses: anselmes/cicd/.github/actions/build@update-gha # fixme: update-gha https://github.com/anselmes/cicd/commit/update-gha
+        uses: anselmes/cicd/.github/actions/build@main # fixme: main https://github.com/anselmes/cicd/commit/main
         if: ${{ matrix.container.repo == 'ghcr.io' }}
         with:
           build-container-image: true
-          container-image-file: build/img/${{ matrix.container.name }}/Dockerfile
+          container-image-file: build/img/${{ matrix.container.name }}/${{ matrix.container.file || 'Dockerfile' }}
           container-image-name: ${{ matrix.container.repo }}/${{ github.repository_owner }}/${{ matrix.container.name }}
           container-image-platforms: ${{ matrix.container.platform }}
           container-image-repo-password: ${{ secrets.GHCR_TOKEN }}
@@ -59,11 +79,11 @@ jobs:
             org.opencontainers.image.title=${{ matrix.container.name }}
             org.opencontainers.image.description=${{ matrix.container.description || matrix.container.name }}
       - name: Build Container (docker.io)
-        uses: anselmes/cicd/.github/actions/build@update-gha # fixme: update-gha https://github.com/anselmes/cicd/commit/update-gha
+        uses: anselmes/cicd/.github/actions/build@main # fixme: main https://github.com/anselmes/cicd/commit/main
         if: ${{ matrix.container.repo == 'docker.io' }}
         with:
           build-container-image: true
-          container-image-file: build/img/${{ matrix.container.name }}/Dockerfile
+          container-image-file: build/img/${{ matrix.container.name }}/${{ matrix.container.file || 'Dockerfile' }}
           container-image-name: ${{ matrix.container.repo }}/${{ github.actor }}/${{ matrix.container.name }}
           container-image-platforms: ${{ matrix.container.platform }}
           container-image-repo-password: ${{ secrets.DOCKER_TOKEN }}
