@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   bot:
-    uses: anselmes/cicd/.github/workflows/bot.yml@042c5469e6121d8aa7578e177c58e12deebff9e1 # v0.2.1
+    uses: anselmes/cicd/.github/workflows/bot.yml@d543980b235b5c5e40d5b13aaa64b532f4208446 # v0.3.8
     permissions:
       contents: write
       issues: write
